@@ -1,0 +1,1 @@
+g++ -o test test_log.cpp log.h sys.cpp -std=c++11 -g
