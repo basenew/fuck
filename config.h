@@ -85,7 +85,8 @@ namespace comm
 		proto(Proto::TCP),
 		demon(false),
 		proc_cnt(1),
-		ip("127.0.0.1")
+		//ip("127.0.0.1")
+		ip("192.168.0.108")
 		{};
 	};
 

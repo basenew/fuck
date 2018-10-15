@@ -1,5 +1,6 @@
-#ifndef __SYS_H__
-#define __SYS_H__
+#ifndef __COMM_SYS_H__
+#define __COMM_SYS_H__
+
 #include "typedef.h"
 #include <iostream>
 

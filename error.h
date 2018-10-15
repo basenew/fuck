@@ -2,7 +2,7 @@
 #define __COMM_ERROR_H__
 namespace comm
 {
-	enum class Err
+	enum Err
 	{
 		OK = 0,
 		ERR = 1,

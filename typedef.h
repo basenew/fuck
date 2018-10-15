@@ -1,7 +1,7 @@
 #ifndef __TYPEDEF_H__
 #define __TYPEDEF_H__
 
-namespace bn
+namespace comm 
 {
 
 using ushort = unsigned short;
@@ -41,7 +41,7 @@ using pcint64  = const long*;
 using pcuint64 = const unsigned long*;
 
 using fd = int;
-
+using cid = uint32;
 };
 
 #endif
