@@ -1,5 +1,10 @@
 #pragma once
+#include "../typedef.h"
 #include "io_handler.h"
+
+#include <iostream>
+
+using namespace std;
 
 namespace comm
 {
@@ -16,11 +21,11 @@ public:
 
 	int id(){return _id;};
 	int send(pcchar data, int size, int delay);
-	void handler_data(pcchar data, int size);
+	virtual void handler_data(pcchar data, int size);
 
-	virtual void on_connected();
-	virtual void on_disconnect(int err);
-	virtual void on_close();
+	virtual void on_connected(){};
+	virtual void on_disconnect(int err){};
+	virtual void on_close(){};
 protected:
 	virtual void on_read();
 	virtual void on_write();
