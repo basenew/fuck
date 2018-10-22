@@ -23,7 +23,7 @@ public:
 
 	server_frame(reactor& evt_egn, io_handler& main_io):_evt_egn(evt_egn), _main_io(main_io), _status(STATUS_STOPED){};
 	virtual ~server_frame(){};
-	int start(int argc, char** argv);
+	virtual int start(int argc, char** argv);
 	void stop();
 
 	virtual void send_sig(int sig);

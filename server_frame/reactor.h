@@ -1,12 +1,16 @@
 #pragma once
 #include "io_handler.h"
 
-
 namespace comm
 {
 
 class reactor
 {
+public:
+	enum event{
+        	READ  = 0x001,
+        	WRITE = 0x004,
+	};
 public:
 	reactor();
 	virtual ~reactor();

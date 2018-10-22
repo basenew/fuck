@@ -25,5 +25,6 @@ namespace comm
 	int set_snd_buf_size(int fd, int size);
 	int get_socket_error(int fd);
 	sockaddr_in trans_sockaddr(const string& ip, ushort port); 
+	void trans_straddr(const sockaddr_in& addr, string& ip); 
 	int check_sock_event(int fd, bool read_event, bool write_event, int timeout_ms);
 }

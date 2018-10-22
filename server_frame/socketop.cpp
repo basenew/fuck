@@ -15,6 +15,13 @@ namespace comm
 		addr.sin_port = port;
 		return addr;
 	}
+
+	void trans_straddr(const sockaddr_in& addr, string& ip)
+	{
+		char* ip_tmp = inet_ntoa(&addr.s_addr);
+		ip = ip_tmp;
+	}
+
 	int check_sock_event(int fd, bool read_event, bool write_event, int timeout_ms)
 	{
 		pollfd plfd;
@@ -145,7 +152,7 @@ namespace comm
 	int set_nodelay(int fd)
 	{
 		int nodelay = 1;
-		
+	
 		//if (0 != setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)))
 		{
 			LOG_ERR << get_errno_str() << endl;	

@@ -1,6 +1,7 @@
 SRCS=$(wildcard *.cpp)
 BIN_SRCS=$(shell grep "int main" -l *.cpp)
 LIB_SRCS=$(patsubst $(BIN_SRCS),,$(SRCS))
+LIB_DIR=../../lib
 
 DEPS=$(SRCS:.cpp=.d) 
 OBJS=$(SRCS:.cpp=.o) 
@@ -23,7 +24,7 @@ else
 CFLAGS += -g -DDEBUG 
 endif
 
-all: $(BINS) $(SO_LIB) $(STATIC_LIB) 
+all: $(BINS) $(SO_LIB) $(STATIC_LIB) install 
 
 $(BINS): % : %.o $(LIB_OBJS) 
 	$(CC) $(CFLAGS) -o $@ $^  
@@ -31,6 +32,9 @@ $(SO_LIB): $(LIB_OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ 
 $(STATIC_LIB): $(LIB_OBJS) 
 	ar -rcs -o $@ $^ 
+install:
+	mv $(SO_LIB) $(STATIC_LIB) $(LIB_DIR)
+	rm -f $(BINS) $(OBJS) $(DEPS) $(SO_LIB) $(STATIC_LIB)
 dist :
 	rm -f $(DEPS)
 clean:

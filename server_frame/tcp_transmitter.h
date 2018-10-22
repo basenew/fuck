@@ -1,7 +1,7 @@
 #pragma once
 #include "../typedef.h"
 #include "io_handler.h"
-
+#include "buffer.h"
 #include <iostream>
 
 using namespace std;
@@ -21,18 +21,20 @@ public:
 
 	int id(){return _id;};
 	int send(pcchar data, int size, int delay);
-	virtual void handler_data(pcchar data, int size);
+	virtual void handle_data(pcchar data, int size);
 
 	virtual void on_connected(){};
 	virtual void on_disconnect(int err){};
 	virtual void on_close(){};
 protected:
-	virtual void on_read();
-	virtual void on_write();
-	virtual void on_error();
+	void on_read();
+	void on_write();
+	void on_error();
 
 private:
 	int _id;
+	buffer _snd_buf;
+	buffer _rcv_buf;
 };
 
 }
