@@ -1,9 +1,0 @@
-cc = g++
-flags = -c -Wall
-incl_dir =
-lib_dir =
-src = main.cpp server.cpp sys.cpp
-proc = server
-
-$(proc):${src}
-	$(cc) -o $(proc) ${src} -std=c++11
