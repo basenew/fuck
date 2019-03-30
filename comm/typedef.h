@@ -42,6 +42,10 @@ using pcuint64 = const unsigned long*;
 
 using fd = int;
 using cid = uint32;
+
+const int KB = 1024;
+const int MB = KB*KB;
+const int GB = KB*MB;
 };
 
 #endif

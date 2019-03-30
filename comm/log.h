@@ -52,8 +52,8 @@ namespace comm
 			};
 
 			bool if_log(ELVL lvl){return lvl <= _lvl;}
-			/*
 
+			/*
 			   bool config(int out = STD, const string& path = string(""), 
 			   const string& name = string(""), bool safe = true, ESPLIT split = HOUR);
 			   int print(pcchar msg, pcchar file_name = nullptr, int line = -1, 
@@ -64,7 +64,7 @@ namespace comm
 			   _out << v;
 			   return *this;
 			   }
-			   */
+			*/
 		private:
 			ofstream _out;
 			bool _safe;	
@@ -106,7 +106,7 @@ namespace comm
 				}
 			}
 
-public:
+		public:
 			static Log& ins()
 			{
 				static Log log;
@@ -120,7 +120,9 @@ public:
 #define LOG_MSG LOGIF(Log::MSG)
 #define LOG_ERR LOGIF(Log::ERR)
 #define LOG_SYS LOGIF(Log::SYS)
-/*#define LOG_MSG(msg, size) Log::GetLog.print(msg, size, __FILE__, __LINE__, nullptr, ELVL::MSG)
+
+/*
+#define LOG_MSG(msg, size) Log::GetLog.print(msg, size, __FILE__, __LINE__, nullptr, ELVL::MSG)
 #define LOG_ERR(msg, size) Log::GetLog.print(msg, size, __FILE__, __LINE__, nullptr, ELVL::ERR);
 #define LOG_SYS(msg, size) Log::GetLog.print(msg, size, __FILE__, __LINE__, nullptr, ELVL::SYS);
 
