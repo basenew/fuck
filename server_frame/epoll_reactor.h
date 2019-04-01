@@ -1,6 +1,7 @@
 #pragma once
+#include "../comm/comm.h"
 #include "reactor.h"
-#include "../vector_list.h"
+//#include "../vector_list.h"
 
 #include <sys/epoll.h>
 
@@ -14,7 +15,6 @@ public:
 	virtual ~epoll_reactor(){::close(_ep_fd);if (_evts) delete[] _evts;};
 
 	int open(int io_handler_cnt);
-protected:
 	virtual int check(int ms);
 	virtual int add_handler(io_handler* h, int evts);
 	virtual int mod_handler(io_handler* h, int evts);

@@ -1,5 +1,5 @@
 #pragma once
-#include "../comm_include.h"
+#include "../comm/comm.h"
 
 #include <string.h>
 
@@ -13,21 +13,24 @@ public:
 	_size(size),
 	_in(0),
 	_out(0),
-	_buf(nullptr)
+	_buf(new char[size])
 	{
-		_buf = new char[_size];
 	};
-	~buffer();
+	~buffer()
+	{
+		if (_buf) delete[] _buf;
+	};
 
-	int size()const {return _size;};
-	int space_size()const {return _size - _in;};
-	int data_size()const {return _in - _out;};
-	bool empty()const {return _in >= _size;};
-	char* space(){return _buf + _in;};
-	char* data(){return _buf + _out;};
-	void push(int len){_in += len;};
-	void pop(int len){_out += len;};
-	void adjust()
+	inline int size()const {return _size;};
+	inline int space_size()const {return _size - _in;};
+	inline int data_size()const {return _in - _out;};
+	inline bool empty()const {return _in >= _size;};
+	inline char* space(){return _buf + _in;};
+	inline char* data(){return _buf + _out;};
+	inline void push(int len){_in += len;};
+	inline void pop(int len){_out += len;};
+
+	inline void adjust()
 	{
 		if (_buf && _size)
 		{
@@ -36,7 +39,8 @@ public:
 			_out = 0;
 		}	
 	};
-	void resize(int size)
+
+	inline void resize(int size)
 	{
 		if (_buf)
 		{

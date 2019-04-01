@@ -1,5 +1,4 @@
 #include "socketop.h"
-#include "../log.h"
 #include <poll.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -18,8 +17,14 @@ namespace comm
 
 	void trans_straddr(const sockaddr_in& addr, string& ip)
 	{
-		char* ip_tmp = inet_ntoa(&addr.s_addr);
+		char* ip_tmp = inet_ntoa(addr.sin_addr);
 		ip = ip_tmp;
+	}
+
+	string trans_straddr(const sockaddr_in& addr)
+	{
+		char* ip_tmp = inet_ntoa(addr.sin_addr);
+		return string(ip_tmp);	
 	}
 
 	int check_sock_event(int fd, bool read_event, bool write_event, int timeout_ms)
@@ -153,7 +158,7 @@ namespace comm
 	{
 		int nodelay = 1;
 	
-		//if (0 != setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)))
+		//todo if (0 != setsockopt(fd, IPPROTO_TCP, TCP_NONDELAY, &nodelay, sizeof(nodelay)))
 		{
 			LOG_ERR << get_errno_str() << endl;	
 			return -1;

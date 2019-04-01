@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../comm_include.h"
+#include "../comm/comm.h"
 #include "reactor.h"
 #include "io_handler.h"
 
@@ -27,6 +27,7 @@ public:
 	void stop();
 
 	virtual void send_sig(int sig);
+
 protected:
 	virtual void on_start();
 	virtual void on_stop();

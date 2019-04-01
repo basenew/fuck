@@ -13,13 +13,14 @@ using namespace std;
 namespace comm
 {
 
-typedef std::tr1::function<int(int,sockaddr_in*)> accept_cb;
+//typedef std::tr1::function<int(int,sockaddr_in*,void*)> accept_cb;
+typedef int (*accept_cb)(int,sockaddr_in*,void*);
 class tcp_acceptor:public io_handler
 {
 public:
 	tcp_acceptor(){};
 	virtual ~tcp_acceptor(){};
-	int open(const string& ip, ushort port, accept_cb cb);
+	int open(const string& ip, ushort port, accept_cb cb, void* context);
 	void close();
 
 protected:
@@ -29,6 +30,7 @@ protected:
 
 private:
 	accept_cb _cb;	
+	void* _context;
 	int _fd;
 };
 }

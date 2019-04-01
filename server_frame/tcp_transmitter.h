@@ -1,5 +1,5 @@
 #pragma once
-#include "../typedef.h"
+#include "../comm/comm.h"
 #include "io_handler.h"
 #include "buffer.h"
 #include <iostream>

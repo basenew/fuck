@@ -1,6 +1,5 @@
 #pragma once
-#include "../typedef.h"
-#include "../log.h"
+#include "../comm/comm.h"
 
 #include <iostream>
 #include <netinet/in.h>
@@ -26,5 +25,6 @@ namespace comm
 	int get_socket_error(int fd);
 	sockaddr_in trans_sockaddr(const string& ip, ushort port); 
 	void trans_straddr(const sockaddr_in& addr, string& ip); 
+	string trans_straddr(const sockaddr_in& addr);
 	int check_sock_event(int fd, bool read_event, bool write_event, int timeout_ms);
 }
