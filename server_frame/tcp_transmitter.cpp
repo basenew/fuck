@@ -112,6 +112,9 @@ namespace comm
 
 	}
 
+	void tcp_transmitter::handle_data(pcchar data, int size)
+	{
+	}
 
 
 }

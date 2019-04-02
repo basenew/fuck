@@ -27,13 +27,11 @@ public:
 	void stop();
 
 	virtual void send_sig(int sig);
-
-protected:
-	virtual void on_start();
-	virtual void on_stop();
-	virtual void on_suspend();
-	virtual void on_continue();
-	virtual void on_reload();
+	virtual void on_start(){};
+	virtual void on_stop(){};
+	virtual void on_suspend(){};
+	virtual void on_continue(){};
+	virtual void on_reload(){};
 
 private:
 	server_frame(const server_frame&);

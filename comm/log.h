@@ -103,6 +103,8 @@ namespace comm
 					stringstream ss;
 					ss << date_time << "_" << getpid() << ".log";
 					ss >> _name;
+					cout << "new name:" << _name << endl;
+//					_name = "test.log";
 				}
 			}
 

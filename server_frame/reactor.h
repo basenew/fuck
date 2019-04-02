@@ -12,17 +12,16 @@ public:
         	WRITE = 0x004,
 	};
 public:
-	reactor();
-	virtual ~reactor();
-	virtual int open(int io_hdl_cnt);
-	virtual void close();
-	virtual int check(int msec);
-	virtual int add_handler(io_handler* h, int evts);
-	virtual int mod_handler(io_handler* h, int evts);
-	virtual void del_handler(io_handler* h);
+	virtual ~reactor(){};
+	virtual int open(int io_hdl_cnt) = 0;
+	virtual void close() = 0;
+	virtual int check(int msec) = 0;
+	virtual int add_handler(io_handler* h, int evts) = 0;
+	virtual int mod_handler(io_handler* h, int evts) = 0;
+	virtual void del_handler(io_handler* h) = 0;
 private:
-	reactor(const reactor&);
-	reactor& operator=(const reactor&);
+	//todo reactor(const reactor&);
+	//todo reactor& operator=(const reactor&);
 };
 
 }
