@@ -13,7 +13,7 @@ public:
 	io_handler():_fd(-1),_reactor(nullptr){};
 	virtual ~io_handler(){if (_fd != -1) close(_fd);_reactor = nullptr;};
 
-	int open(int io_handler_cnt){return ERR;};
+	virtual int open(int io_handler_cnt){return ERR;};
 	virtual void on_read(){};
 	virtual void on_write(){};
 	virtual void on_error(){};

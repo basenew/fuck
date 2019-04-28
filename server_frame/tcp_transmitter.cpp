@@ -104,16 +104,17 @@ namespace comm
 
 	void tcp_transmitter::on_write()
 	{
-
+		LOG_MSG << "on_write" << endl;
 	}
 
 	void tcp_transmitter::on_error()
 	{
-
+		LOG_ERR << "on_error" << endl;
 	}
 
 	void tcp_transmitter::handle_data(pcchar data, int size)
 	{
+		LOG_MSG << "handle data:" << data << endl;
 	}
 
 
