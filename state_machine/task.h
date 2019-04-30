@@ -4,26 +4,11 @@
 #include <iostream>
 
 using namespace std;
+using namespace comm;
 namespace state_machine
 {
-enum TMsg
-{
-	TMSG_PRE_INIT,
-	TMSG_AFT_INIT,
-	TMSG_PRE_START,
-	TMSG_AFT_START,
-	TMSG_PRE_STOP,
-	TMSG_AFT_STOP,
-	TMSG_PRE_PAUSE,
-	TMSG_AFT_PAUSE
-	TMSG_PRE_RESUME,
-	TMSG_AFT_RESUME,
-};
 
-class Task:public MsgList, public MsgProc
-{
-public:
-	enum class TSTATE
+	enum TSTATE
 	{
 		ST_IDLE,
 		ST_WORKING,
@@ -31,29 +16,34 @@ public:
 		ST_MAX,
 		ST_INVALID,
 	};
-	enum class TOP
+	
+	enum TOP
 	{
 		OP_START,
 		OP_STOP,
-		OP_PAUSED,
+		OP_PAUSE,
 		OP_RESUME,
 		OP_MAX,
 	};
 
-public:
-	Task(const string& name);
-	inline const string& name(){return _name;};
-	virtual ~ITask();
-	virtual int init() = 0;
-	virtual int start() = 0;
-	virtual int stop() = 0;
-	virtual int pause() = 0;
-	virtual int resume() = 0;
+	class Task:public MsgList, public MsgProc
+	{
+		public:
+			Task(const string& name);
+			virtual ~Task();
+			virtual int init();
+			virtual int start();
+			virtual int stop();
+			virtual int pause();
+			virtual int resume();
+			virtual bool operator()(int msg_type, char* data, int len);
 
-	virtual bool operator()(int msg_type, char* data, int len);
-private:
-	string _name;
-	int _tid;
-	TSTATE _st;
-};
+			inline const string& name(){return _name;};
+		private:
+			int _op(int op);
+
+			string _name;
+			int    _st;
+			int	   _tid;
+	};
 };

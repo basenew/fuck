@@ -23,13 +23,13 @@ MsgList::~MsgList()
 	clear();
 }
 
-bool MsgList::post(int msg_type, char* data, int len)
+int MsgList::post(int msg_type, char* data, int len)
 {
 	LOG_MSG << "post msg:" << msg_type << " len:" << len << endl;
 	if (!_working)
 	{
 		LOG_MSG << "msg list is not running" << endl;
-		return false;
+		return ERR;
 	}
 
 	unique_lock<mutex> lck(_mtx);
@@ -43,16 +43,16 @@ bool MsgList::post(int msg_type, char* data, int len)
 	}
 	_msg_lst.push_back(msg);
 	_cv.notify_all();
-	return true;
+	return OK;
 }
 
-bool MsgList::on_msg(int msg_type, char* data, int len)
+int MsgList::on_msg(int msg_type, char* data, int len)
 {
 	LOG_MSG << "on_msg:" << msg_type << " len:" << len << endl;
-	return true;
+	return OK;
 }
 
-void MsgList::clear()
+int MsgList::clear()
 {
 	LOG_MSG << "clear" << endl;
 	unique_lock<mutex> lck(_mtx);
@@ -62,6 +62,7 @@ void MsgList::clear()
 		  delete[] msg.data;
 	}
 	_msg_lst.clear();
+	return OK;
 }
 
 void MsgList::thread_proc(MsgList* msg_lst)
@@ -93,7 +94,7 @@ void MsgList::_thread_proc()
 	LOG_MSG << "_thread_proc exit" << endl;
 }
 
-void MsgList::run(MsgProc* msg_proc)
+int MsgList::run(MsgProc* msg_proc)
 {
 	LOG_MSG << "run" << endl;
 	_msg_proc = msg_proc;
@@ -106,13 +107,17 @@ void MsgList::run(MsgProc* msg_proc)
 	catch (exception e)
 	{
 		LOG_ERR << e.what() << endl;
+		return ERR;
 	}
+	return OK;
 }
 
-void MsgList::stop()
+int MsgList::stop()
 {
 	LOG_MSG << "stop" << endl;
 	_working = false;
+	_thd.join();
+	return OK;
 }
 
 

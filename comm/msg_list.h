@@ -31,11 +31,11 @@ class MsgList
 public:
 	MsgList();
 	virtual ~MsgList();
-	virtual void clear();
-	virtual bool post(int msg_type, char* data, int len);
-	virtual bool on_msg(int msg_type, char* data, int len);
-	virtual void run(MsgProc* msg_proc = nullptr);
-	virtual void stop();
+	virtual int clear();
+	virtual int post(int msg_type, char* data, int len);
+	virtual int on_msg(int msg_type, char* data, int len);
+	virtual int run(MsgProc* msg_proc = nullptr);
+	virtual int stop();
 
 private:
 	static void thread_proc(MsgList* msg_lst);

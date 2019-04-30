@@ -1,0 +1,1 @@
+g++ task.cpp -std=c++11 -c -I../comm
