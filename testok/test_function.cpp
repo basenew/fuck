@@ -5,6 +5,7 @@ using namespace std;
 
 int add(int a, int b)
 {
+	cout << "add(" << a << "," << b << ")=" << a+b << endl;
 	return a+b;
 }
 
@@ -36,5 +37,7 @@ int main(int argc, char** argv)
 	cout << f(3,4) << endl;
 	B b(a);
 	b.call();
+	function<int ()> f1 = bind(add, 1, 2);
+	f1();
 	return 0;
 }

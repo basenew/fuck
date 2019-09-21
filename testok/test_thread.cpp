@@ -40,6 +40,7 @@ int main()
 	std::thread t3(f2, std::ref(n)); // 按引用传递
 	std::thread t4(std::move(t3)); // t4 现在运行 f2() 。 t3 不再是线程
 	std::thread t5(A::func1, "basenew");
+	std::this_thread::sleep_for(std::chrono::seconds(10));
 	t2.join();
 	t4.join();
 	t5.join();
