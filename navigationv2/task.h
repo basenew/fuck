@@ -18,7 +18,7 @@ friend class TaskFlow;
 friend class TaskThread;
 
 public:
-	Task(const string& name = ""):TaskProc(name){
+	Task(const string& name = "", TaskCB cb = nullptr):TaskProc(name, cb){
 		cout << "create task:" << _name << endl;
 	};
 

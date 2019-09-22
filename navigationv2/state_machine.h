@@ -8,6 +8,7 @@ namespace nav{
 
 class StateMachine{
 public:
+	//todo may be protected
 	enum STATE
 	{
 		IDLE,

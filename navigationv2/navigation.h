@@ -32,8 +32,5 @@ private:
 
 };
 
-class NavigationTask:public Navigation
-{
-};
 }
 
