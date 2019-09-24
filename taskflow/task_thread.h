@@ -8,6 +8,7 @@
 //#include <condition_variable>
 
 #include "task.h"
+#include "state_machine.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -20,7 +21,7 @@ class TaskThread
 {
 public:
 	TaskThread(const string& name = "")
-	:_name(name)
+	:_name("thd_"+name)
 	,_thd(nullptr)
 	,_running(false)
 	,_exited(false)
@@ -47,15 +48,17 @@ public:
 		_running = true;	
 		_task_lst.clear();
 		if (_thd == nullptr)
-		  _thd = new thread(&_thread_proc_cb, this);
+		{
+			_thd = new thread(&_thread_proc_cb, this);
+			_thd->detach();
+		}
 
 		cout << _name << " start ok" << endl;
 
 		return true;
 	};
 
-	bool stop()
-	{
+	bool stop(){
 		cout << _name << " stop..." << endl;
 		unique_lock<mutex> lock(_mt);
 		if (_thd == nullptr || !_running) return true;
@@ -63,26 +66,34 @@ public:
 		_running = false;	
 		_cv.notify_one();
 		lock.unlock();
-
-		_thd->join();
+		
+		if (_thd->joinable())
+			_thd->join();
 
 		cout << _name << " stop ok" << endl;
 		return true;
 	};
 
 	size_t push(Task* t){
+		cout << _name << " push task" << endl;
 		if (t == nullptr) return 0;
 
+		int sz;
 		unique_lock<mutex> lock(_mt);
 		_task_lst.push_back(t);
 		_t = t;
 		_cv.notify_one();
-		return _task_lst.size();
+		sz = _task_lst.size();
+		lock.unlock();
+		_t->wait_waiting();
+		cout << _name << " push " << t->name() << endl;
+		return sz;
 	};
 
 	Task* task(){return _t;};
 	
 	bool is_exited(){return _exited;};
+
 private:
 	static void _thread_proc_cb(TaskThread* t)
 	{
@@ -121,7 +132,7 @@ private:
 #endif
 			if (_t)
 			{
-				_t->_thread_proc();
+				_t->wait();
 			}
 		}
 		_task_lst.clear();

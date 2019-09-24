@@ -3,6 +3,7 @@
 #include "task_flow.h"
 
 using namespace nav;
+
 #if 0
 class A
 {
@@ -34,32 +35,45 @@ void test_task_thread(int argc, char** argv)
 }
 #endif
 
+void on_finish()
+{
+	cout << "xxxxxxxxxxxxxxxxfinishedxxxxxxxxxxxxxxxxxxxxxxxx" << endl;
+}
+
 void test_task_flow()
 {
+	TaskFlow tf("patrol");
 	cout << "test_task_flow start..." << endl;
 	Task ta("A");	
 	Task tb("B");	
 	Task tc("C");	
 	Task td("D");	
 
-	ta.front(&tb);
-	ta.front(&tc);
+	//ta.front(&tb);
+	//ta.front(&tc);
 	tb.front(&tc);
 	tc.front(&td);
 
-	TaskFlow tf("patrol");
 	tf.push(&ta);
 	tf.push(&tb);
 	tf.push(&tc);
 	tf.push(&td);
 
-	tf.start(nullptr);
+	tf.start(on_finish);
+	cout << "------------input any key to stop task flow-----------------------" << endl;
+	getchar();
 	cout << "test_task_flow finish" << endl;
 }
 
 int main(int argc, char** argv)
 {
 	test_task_flow();
+	//thread t(test_task_flow, std::ref(tf));
+	//while (tf.running_count()){
+	//	cout << "to stop task" << endl;
+//		getchar();
+	//}
 
 	return 0;
 }
+

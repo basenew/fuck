@@ -28,8 +28,10 @@ public:
 		TaskResult():ret(ERR), param1(0), param2(0){};
 	};
 
+	using TaskCB = function<void()>;
+
 public:
-	TaskProc(const string& name):_name(name){};
+	TaskProc(const string& name = "", TaskCB cb = nullptr):_name(name), _cb(cb){};
 	TaskProc(const TaskProc&) = delete;
 	void operator=(const TaskProc&) = delete;
 
@@ -40,7 +42,7 @@ public:
 	inline bool is_running(){return _st == RUNNING;};
 	inline bool is_finished(){return _st == FINISHED;};
 
-	inline bool start()
+	inline int start()
 	{
 		if (StateMachine::start())
 		{
@@ -66,8 +68,10 @@ public:
 		unique_lock<mutex> lock(_mt);
 		while (_st != RUNNING)_cv.wait(lock);
 
-		if (_st == RUNNING)
-			execute();
+		if (_st == RUNNING){
+			if (_cb) _cb();
+			else execute();
+		}
 
 		_st = FINISHED;
 		_cv.notify_all();
@@ -83,6 +87,7 @@ protected:
 protected:
 	mutex              _mt;
 	string             _name;
+	TaskCB             _cb;
 	TaskResult         _ret;
 	condition_variable _cv;
 };

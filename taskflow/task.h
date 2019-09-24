@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
+#include <stdio.h>
 #include <algorithm>
 #include <condition_variable>
 #include "state_machine.h"
@@ -31,7 +32,7 @@ public:
 	};
 
 public:
-	Task(const string& name = ""):_name(name){
+	Task(const string& name = ""):StateMachine(name){
 		cout << "create task:" << _name << endl;
 	};
 
@@ -41,8 +42,6 @@ public:
 
 	Task(const Task&) = delete;
 	void operator=(const Task&) = delete;
-
-
 
 	bool front(Task* t){
 		cout << _name << " front " << t->_name << endl;
@@ -73,6 +72,7 @@ public:
 		cout << _name << " font size: " << _fronts.size() << endl;
 		return true;
 	};
+
 	bool rm_behind(Task* t){
 		cout << _name << " rm behind " << t->_name << endl;
 		auto it = find(begin(_behinds), end(_behinds), t);
@@ -83,63 +83,30 @@ public:
 		return true;
 	};
 
-	bool start()
-	{
-		if (StateMachine::start())
-		{
-			_cv.notify_one();
-			return true;
-		}
-		return false;
-	}
-
-	void wait()
-	{
-		cout << "wait " << _name << "..." << endl;
+	inline bool is_ready(){
 		unique_lock<mutex> lock(_mt);
-		while (_st != FINISHED) _cv.wait(lock);
-		cout << "wait " << _name << " ok" << endl;
+		return (_st == WAITING || _st == IDLE) && _fronts.empty();
 	};
 
-	inline const string& name(){return _name;};	
-	inline void name(const string& name){_name = name;	};
-	inline bool is_idle(){return _st == IDLE;};
-	inline bool is_paused(){return _st == PAUSED;};
-	inline bool is_running(){return _st == RUNNING;};
-	inline bool is_finished(){return _st == FINISHED;};
-	inline bool is_ready(){return is_idle() && _fronts.empty();};
-	inline bool is_last(){return  _behinds.empty();};
+	inline bool is_last(){
+		unique_lock<mutex> lock(_mt);
+		return  _behinds.empty();
+	};
 
-	inline list<Task*>& fronts(){return _fronts;};
+	inline list<Task*>& fronts() {return _fronts;};
 	inline list<Task*>& behinds(){return _behinds;};
 
-
 protected:
-	virtual void execute()
+	virtual void on_running()
 	{
-		cout << _name << " execute" << endl;
-		this_thread::sleep_for(seconds(1));	
+		cout << _name << " on_running" << endl;
+		//getchar();
+		//wait();
+		this_thread::sleep_for(seconds(2));
+		cout << _name << " on_running finished" << endl;
 	};
 
 private:
-	void _thread_proc()
-	{
-		cout << _name << " running" << endl;
-		unique_lock<mutex> lock(_mt);
-		while (_st != RUNNING)_cv.wait(lock);
-
-		if (_st == RUNNING)
-			execute();
-
-		_st = FINISHED;
-		_cv.notify_all();
-	};
-
-private:
-	mutex              _mt;
-	condition_variable _cv;
-
-	string		_name;
 	list<Task*> _fronts;
 	list<Task*> _behinds;
 	TaskResult  _task_result;

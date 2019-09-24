@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <atomic>
+#include "../navigation/nav_error_code.h"
 
 using namespace std;
 
@@ -8,6 +9,7 @@ namespace nav{
 
 class StateMachine{
 public:
+	//todo may be protected
 	enum STATE
 	{
 		IDLE,
@@ -39,19 +41,19 @@ public:
 		return _st;
 	};
 
-	virtual bool start() {
+	virtual int start() {
 		return _next_state(START);
 	};
 
-	virtual bool stop(){
+	virtual int stop(){
 		return _next_state(STOP);
 	};
 
-	virtual bool pause(){
+	virtual int pause(){
 		return _next_state(PAUSE);
 	};
 
-	virtual bool resume(){
+	virtual int resume(){
 		return _next_state(RESUME);
 	};
 
@@ -64,10 +66,10 @@ private:
 		if (st != _st)
 		{
 			_st = st;
-			return true;
+			return ERR_OK;
 		}
 
-		return false;
+		return ERR_INVALID_OP;
 	};
 
 	

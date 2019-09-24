@@ -2,6 +2,7 @@
 #include <list>
 #include <assert.h>
 #include <iostream>
+#include <sstream>
 #include <type_traits>
 
 #include "task.h"
@@ -16,13 +17,17 @@ class TaskFlow:public StateMachine
 {
 public:
 	TaskFlow(const string& name = "")
-	:_name(name)
+	:StateMachine(name)
 	,_thd(nullptr){
 	};
 
 	virtual ~TaskFlow(){
-		for (auto thd:_thds)
-		  if (thd) delete thd;
+		for (auto thd:_thds){
+		  if (thd) {
+			  delete thd;
+		  }
+		}
+
 		_thds.clear();
 
 		if (_thd)
@@ -40,17 +45,20 @@ public:
 	inline void   push(Task* t){_tasks.push_back(t);};
 
 	bool start(function<void()> on_finish){
-		cout << _name << " start..." << endl;
+		cout << _name << " start" << endl;
 		if (StateMachine::start()){
+			int i = 0;
 			for (Task* t:_tasks){
 				if (t->is_ready()){
-					t->start();
 					_actives.push_back(t);
 
-					TaskThread* thd = new TaskThread();
+					stringstream ss;
+					ss << i++;
+					TaskThread* thd = new TaskThread(ss.str());
 					_thds.push_back(thd);
-					thd->push(t);
 					thd->start();
+					thd->push(t);
+//					t->start();
 				}
 			}
 
@@ -74,6 +82,14 @@ public:
 		return false;
 	};
 
+	bool stop(){
+		if (StateMachine::stop())
+		{
+			for (auto t:_tasks)
+				t->stop();
+		}
+	}
+
 private:
 	static void _thread_proc(TaskFlow* tf)
 	{
@@ -82,20 +98,34 @@ private:
 
 	void _wait(){
 		bool finished = false;
-		while (!finished){
+		cout << _name << " wait..." << endl;
+		while (!is_finished() && !finished){
 			finished = true;
 			list<TaskThread*> thds = _thds;
 			for (TaskThread* thd:thds){
 				if (thd->is_exited()){
-					cout << "already stoped" << endl;
+					cout << _name << "already stoped" << endl;
 					continue;
 				}
 
 				Task* t = thd->task();
 				assert(t);
-				t->wait();
-				if (t->is_last()){
-					cout << t->name() << " is last" << endl;
+				if (t->is_ready()){
+					t->start();
+					continue;
+				}
+				else if (!t->wait_finished(10)){
+					//cout << _name << " " << t->name() << " not finished" << endl;
+					finished = false;
+					continue;
+				}
+				else if (is_finished()){
+					cout << _name << " stop by user" << endl;
+					thd->stop();
+					continue;
+				}
+				else if (t->is_finished() && t->is_last()){
+					cout << t->name() << " is finished and is last" << endl;
 					thd->stop();
 					continue;
 				}
@@ -105,7 +135,7 @@ private:
 				for (auto bt:behinds){
 					t->rm_behind(bt);
 					bt->rm_front(t);
-					cout << bt->name() << " state:" << bt->state() << endl;
+					cout << bt->name() << " state:" << bt->status() << endl;
 					if (bt->is_ready()){
 						cout << bt->name() << " is ready" << endl;
 						bt->start();
@@ -133,9 +163,7 @@ private:
 		cout << _name << " finish" << endl;
 	};
 
-
 private:
-	string	_name;
 	thread* _thd;
 
 	list<Task*>  _tasks;	
@@ -143,7 +171,7 @@ private:
 	//list<Task*> _finised_tasks;	
 
 	list<TaskThread*>  _thds;	
-	function<void()>  _on_finish;
+	function<void()>   _on_finish;
 };
 
 }
