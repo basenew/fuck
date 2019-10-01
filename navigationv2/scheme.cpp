@@ -48,19 +48,35 @@ ERR_CODE Scheme::parse(Value& scheme)
 	bool alarm = scheme["alarmLight"].asBool();
 	LampTask lamp_t(START, white, rb, alarm);
 	
+<<<<<<< HEAD
 	int bc_op = scheme["broadcastSwitch"].asInt();
 	int mode = scheme["broadcastPlayMode"].asInt();
 	int sz = scheme["broadcastList"].size();
 	Value js_lst = scheme["broadcastList"];
+=======
+	int bc_sw = scheme["broadcastSwitch"].asInt();
+	int mode = scheme["broadcastPlayMode"].asInt();
+	int sz = scheme["broadcastList"].size();
+	Json::Value js_lst = scheme["broadcastList"];
+>>>>>>> 23570c74d63bab74ffecd0c699895b9018237214
 	vct_string lst;
 	for(int i = 0; i < sz; i ++){
 	    lst.push_back(js_lst[i].asString());
 	}
+<<<<<<< HEAD
 	BrocastTask bc_t(static_cast<OP>(bc_op), static_cast<MODE>(mode), lst);//todo bc_sw may be START
 	
 	int path_sz = scheme["paths"].size();
 	log_info("path size:%d", path_sz);
 	Value js_paths = scheme["paths"];
+=======
+	BrocastTask bc_t(bc_sw, static_cast<MODE>(mode), lst);//todo bc_sw may be START
+	
+	int path_sz = scheme["paths"].size();
+	log_info("path size:%d", path_sz);
+	Json::Value js_paths = scheme["paths"];
+	
+>>>>>>> 23570c74d63bab74ffecd0c699895b9018237214
 	
 	_ret_pt.angle = scheme["returnPoint"]["angle"].asDouble();
 	_ret_pt.x= scheme["returnPoint"]["x"].asInt();
@@ -68,7 +84,11 @@ ERR_CODE Scheme::parse(Value& scheme)
 	
 	//std::string return_obs_name = scheme["returnPoint"].asString();
 	for(int i = 0; i < path_sz; i ++){
+<<<<<<< HEAD
 		Value& js_path = js_path;//todo maybe error?
+=======
+		Json::Value& js_path = js_path;//todo maybe error?
+>>>>>>> 23570c74d63bab74ffecd0c699895b9018237214
 	    if(js_path["path"].isNull() || js_path["pathType"].isNull()
 	            || js_path["obsPoints"].isNull())
 	        return ERR_INVALID_JSON;
@@ -78,9 +98,15 @@ ERR_CODE Scheme::parse(Value& scheme)
 	        path_name = js_path["path"].asString();
 	
 	    int pt_sz = js_path["obsPoints"].size();
+<<<<<<< HEAD
 	    Value js_pts = js_path["obsPoints"];
 	    for(int j = 0; j < pt_sz; j ++){
 			Value& js_pt = js_pt;
+=======
+	    Json::Value js_pts = js_path["obsPoints"];
+	    for(int j = 0; j < pt_sz; j ++){
+			Json::Value& js_pt = js_pt;
+>>>>>>> 23570c74d63bab74ffecd0c699895b9018237214
 	        if(js_pt["name"].isNull() || js_pt["angle"].isNull()
 	                || js_pt["x"].isNull() || js_pt["y"].isNull())
 				return ERR_INVALID_JSON;

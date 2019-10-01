@@ -8,7 +8,7 @@ struct A
 
 	A() { this->f0(); }
 
-	virtual ~A() { this->f0(); }
+	virtual ~A() { std::cout << "~A" << endl; this->f0(); }
 };
 
 struct B : public A
@@ -22,7 +22,9 @@ struct B : public A
 
 int main()
 {
-	A* b = new B;
-	delete b;
+	for (int i = 0;i < 10;i++)
+	  A a;
+	//A* b = new B;
+	//delete b;
 	return 0;
 }
