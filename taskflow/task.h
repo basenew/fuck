@@ -1,116 +1,112 @@
 #pragma once
-#include <list>
-#include <thread>
-#include <mutex>
 #include <iostream>
-#include <stdio.h>
-#include <algorithm>
+#include <atomic>
+#include <mutex>
+#include <chrono>
 #include <condition_variable>
-#include "state_machine.h"
+#include <assert.h>
+#include "nav_error_code.h"
+
+#define FOREVER     (-1)
 
 using namespace std;
 using namespace std::chrono;
 
 namespace nav{
 
-class Task:public StateMachine
-{
-friend class TaskFlow;
-friend class TaskThread;
+struct TaskCB{
+	virtual ~TaskCB(){};
+	virtual void on_loop()=0;
+	virtual void on_running()=0;
+	virtual void on_paused()=0;
+	virtual void on_finished()=0;
+};
+
+class Task{
 public:
-	struct TaskResult{
-		enum RESULT{
-			OK,
-			ERR,
-			IGR,
-		};
-
-		int ret;
-		int len;
-		void* param;
-		TaskResult():ret(ERR), len(0), param(nullptr){};
-	};
-
-public:
-	Task(const string& name = ""):StateMachine(name){
-		cout << "create task:" << _name << endl;
-	};
-
-	~Task(){
-		cout << "destroy task:" << _name << endl;
-	};
-
-	Task(const Task&) = delete;
-	void operator=(const Task&) = delete;
-
-	bool front(Task* t){
-		cout << _name << " front " << t->_name << endl;
-		auto it = find(begin(_behinds), end(_behinds), t);
-		if (it != end(_behinds)) return true;
-
-		_behinds.push_back(t);
-		t->_fronts.push_back(this);
-		return true;
-	};
-
-	bool behind(Task* t){
-		cout << _name << " behind " << t->_name << endl;
-		auto it = find(begin(_fronts), end(_fronts), t);
-		if (it != end(_fronts)) return true;
-
-		_fronts.push_back(t);
-		t->_behinds.push_back(this);
-		return true;
-	};
-
-	bool rm_front(Task* t){
-		cout << _name << " rm front " << t->_name << endl;
-		auto it = find(begin(_fronts), end(_fronts), t);
-		if (it == end(_fronts)) return false;
-		
-		_fronts.erase(it);
-		cout << _name << " font size: " << _fronts.size() << endl;
-		return true;
-	};
-
-	bool rm_behind(Task* t){
-		cout << _name << " rm behind " << t->_name << endl;
-		auto it = find(begin(_behinds), end(_behinds), t);
-		if (it == end(_behinds)) return false;
-
-		_behinds.erase(it);
-		cout << _name << " behind size: " << _behinds.size() << endl;
-		return true;
-	};
-
-	inline bool is_ready(){
-		unique_lock<mutex> lock(_mt);
-		return (_st == WAITING || _st == IDLE) && _fronts.empty();
-	};
-
-	inline bool is_last(){
-		unique_lock<mutex> lock(_mt);
-		return  _behinds.empty();
-	};
-
-	inline list<Task*>& fronts() {return _fronts;};
-	inline list<Task*>& behinds(){return _behinds;};
-
-protected:
-	virtual void on_running()
+	enum STATE
 	{
-		cout << _name << " on_running" << endl;
-		//getchar();
-		//wait();
-		this_thread::sleep_for(seconds(2));
-		cout << _name << " on_running finished" << endl;
+		IDL,
+		WTG,
+		RNG,
+		PSD,
+		FIN,
+		ST_MAX
 	};
+
+	enum OP
+	{
+		WAT,
+		STA,
+		STP,
+		PUS,
+		RSM,
+		OP_MAX,
+	};
+
+	STATE st_trans[ST_MAX][OP_MAX]{
+	   //WAT  STA  STP  PUS  RSM
+		{WTG, RNG, IDL, IDL, IDL},//IDL
+		{WTG, RNG, FIN, PSD, RNG},//WTG
+		{WTG, RNG, FIN, PSD, RNG},//RNG
+		{WTG, RNG, FIN, PSD, RNG},//PSD
+		{FIN, FIN, FIN, FIN, FIN},//FIN
+	};
+
+	Task(const string& name = ""):_cb(nullptr), _st(IDL), _name(name), _loop_ms(FOREVER){};
+
+	inline int status(){return _st;};
+	inline const string& name(){return _name;};	
+	inline void name(const string& name){_name = name;};
+	inline int  loop_ms(){return _loop_ms;};	
+	inline void loop_ms(int loop_ms){_loop_ms = loop_ms;};
+
+	inline virtual int start() {cout << _name << " start" << endl; return _next_state(STA);};
+	inline virtual int stop()  {cout << _name << " start" << endl; return _next_state(STP);};
+	inline virtual int pause() {cout << _name << " start" << endl; return _next_state(PUS);};
+	inline virtual int resume(){cout << _name << " start" << endl; return _next_state(RSM);};
+
+	inline virtual void on_loop()    {cout << _name << " on_loop" << endl;};
+	inline virtual void on_running() {cout << _name << " on_running" << endl;};
+	inline virtual void on_paused()  {cout << _name << " on_paused" << endl;};
+	inline virtual void on_finished(){cout << _name << " on_finished"  << endl;};
+	inline void cb(TaskCB* cb){_cb = cb;};
+
+	inline virtual bool is_idle()    {unique_lock<mutex> lock(_mt);return _st == IDL;};
+	inline virtual bool is_ready()   {unique_lock<mutex> lock(_mt);return _st == WTG;};
+	inline virtual bool is_paused()  {unique_lock<mutex> lock(_mt);return _st == PSD;};
+	inline virtual bool is_running() {unique_lock<mutex> lock(_mt);return _st == RNG;};
+	inline virtual bool is_finished(){unique_lock<mutex> lock(_mt);return _st == FIN;};
+
+	inline virtual bool wait_waiting (int ms = FOREVER){return wait(WTG, ms);};
+	inline virtual bool wait_running (int ms = FOREVER){return wait(RNG, ms);};
+	inline virtual bool wait_paused  (int ms = FOREVER){return wait(PSD, ms);};
+	inline virtual bool wait_finished(int ms = FOREVER){return wait(FIN, ms);};
+
+	void wait(int ms = FOREVER);
+protected:
+	virtual bool wait(int st, int ms);
 
 private:
-	list<Task*> _fronts;
-	list<Task*> _behinds;
-	TaskResult  _task_result;
+	int _next_state(OP op);
+
+protected:	
+	int                _st;
+	int                _loop_ms;
+	string		       _name;
+	mutex              _mt;
+	condition_variable _cv;
+	TaskCB*            _cb;
 };
 
 }
+
+
+
+
+
+
+
+
+
 

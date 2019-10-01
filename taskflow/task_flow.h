@@ -6,26 +6,24 @@
 #include <type_traits>
 
 #include "task.h"
+#include "task_node.h"
 #include "task_thread.h"
-#include "state_machine.h"
 
 using namespace std;
 
 namespace nav{
 
-class TaskFlow:public StateMachine
+class TaskFlow:public Task 
 {
 public:
 	TaskFlow(const string& name = "")
-	:StateMachine(name)
+	:Task(name)
 	,_thd(nullptr){
 	};
 
 	virtual ~TaskFlow(){
 		for (auto thd:_thds){
-		  if (thd) {
-			  delete thd;
-		  }
+			if (thd) delete thd;
 		}
 
 		_thds.clear();
@@ -35,6 +33,10 @@ public:
 			delete _thd;
 			_thd = nullptr;
 		}
+
+		for (auto t:_tasks){
+			if (t) delete t;	
+		}
 	};
 
 	TaskFlow(const TaskFlow&)=delete;
@@ -42,133 +44,49 @@ public:
 
 	inline size_t total_count(){return _tasks.size() + _actives.size();};
 	inline size_t running_count(){return _thds.size();};
-	inline void   push(Task* t){_tasks.push_back(t);};
-
-	bool start(function<void()> on_finish){
-		cout << _name << " start" << endl;
-		if (StateMachine::start()){
-			int i = 0;
-			for (Task* t:_tasks){
-				if (t->is_ready()){
-					_actives.push_back(t);
-
-					stringstream ss;
-					ss << i++;
-					TaskThread* thd = new TaskThread(ss.str());
-					_thds.push_back(thd);
-					thd->start();
-					thd->push(t);
-//					t->start();
-				}
-			}
-
-			if (on_finish){
-				_on_finish = on_finish;
-				if (_thd)
-				  delete _thd;
-
-				_thd = new thread(_thread_proc, this);
-				_thd->detach();
-				cout << _name << " start ok" << endl;
-			}
-			else{
-				cout << _name << " start ok to wait..." << endl;
-				_wait();
-			}
-			return true;
-		}
-
-		cout << _name << " start fail" << endl;
-		return false;
+	inline void   push(TaskNode* t){_tasks.push_back(t);};
+	inline TaskNode*  push(const string& name, TaskCB* cb){
+		TaskNode* t = new TaskNode(name);
+		_tasks.push_back(t);
+		t->cb(cb);
+		return t;
 	};
 
-	bool stop(){
-		if (StateMachine::stop())
+	virtual bool run(function<void()> on_finish = nullptr);
+
+	inline virtual int stop(){
+		if (ERR_OK == Task::stop())
 		{
 			for (auto t:_tasks)
 				t->stop();
-		}
-	}
 
+			for (auto thd:_thds)
+				thd->stop();
+		
+		}
+		return true;
+	};
+	
+	inline bool empty(){return _tasks.empty();};
+
+	inline TaskNode* operator[](size_t idx){
+		if (_tasks.size() > idx) return _tasks[idx]; 
+		return nullptr;
+	};
 private:
 	static void _thread_proc(TaskFlow* tf)
 	{
 		if (tf) tf->_wait();
 	};
 
-	void _wait(){
-		bool finished = false;
-		cout << _name << " wait..." << endl;
-		while (!is_finished() && !finished){
-			finished = true;
-			list<TaskThread*> thds = _thds;
-			for (TaskThread* thd:thds){
-				if (thd->is_exited()){
-					cout << _name << "already stoped" << endl;
-					continue;
-				}
-
-				Task* t = thd->task();
-				assert(t);
-				if (t->is_ready()){
-					t->start();
-					continue;
-				}
-				else if (!t->wait_finished(10)){
-					//cout << _name << " " << t->name() << " not finished" << endl;
-					finished = false;
-					continue;
-				}
-				else if (is_finished()){
-					cout << _name << " stop by user" << endl;
-					thd->stop();
-					continue;
-				}
-				else if (t->is_finished() && t->is_last()){
-					cout << t->name() << " is finished and is last" << endl;
-					thd->stop();
-					continue;
-				}
-
-				bool only_one = true;
-				list<Task*> behinds = t->behinds();	
-				for (auto bt:behinds){
-					t->rm_behind(bt);
-					bt->rm_front(t);
-					cout << bt->name() << " state:" << bt->status() << endl;
-					if (bt->is_ready()){
-						cout << bt->name() << " is ready" << endl;
-						bt->start();
-						if (only_one){
-							only_one = false;
-							thd->push(bt);
-						}
-						else{
-							TaskThread* thd = new TaskThread();
-							_thds.push_back(thd);
-							thd->push(bt);
-							thd->start();
-						}
-						finished = false;
-					}
-					else
-						cout << bt->name() << " is not ready" << endl;
-				}
-			}
-		}
-
-		if (_on_finish)
-		  _on_finish();
-
-		cout << _name << " finish" << endl;
-	};
+	void _wait();
 
 private:
 	thread* _thd;
 
-	list<Task*>  _tasks;	
-	list<Task*> _actives;	
-	//list<Task*> _finised_tasks;	
+	vector<TaskNode*>  _tasks;	
+	list<TaskNode*>  _actives;	
+	//list<TaskNode*> _finised_tasks;	
 
 	list<TaskThread*>  _thds;	
 	function<void()>   _on_finish;

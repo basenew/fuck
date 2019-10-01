@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include "task.h"
+#include "task_node.h"
 #include "task_thread.h"
 #include "task_flow.h"
 
@@ -44,22 +46,22 @@ void test_task_flow()
 {
 	TaskFlow tf("patrol");
 	cout << "test_task_flow start..." << endl;
-	Task ta("A");	
-	Task tb("B");	
-	Task tc("C");	
-	Task td("D");	
+	TaskNode ta("A");	
+	//TaskNode tb("B");	
+	//TaskNode tc("C");	
+	//TaskNode td("D");	
 
 	//ta.front(&tb);
 	//ta.front(&tc);
-	tb.front(&tc);
-	tc.front(&td);
+	//tb.front(&tc);
+	//tc.front(&td);
 
 	tf.push(&ta);
-	tf.push(&tb);
-	tf.push(&tc);
-	tf.push(&td);
+	//tf.push(&tb);
+	//tf.push(&tc);
+	//tf.push(&td);
 
-	tf.start(on_finish);
+	tf.run(on_finish);
 	cout << "------------input any key to stop task flow-----------------------" << endl;
 	getchar();
 	cout << "test_task_flow finish" << endl;
