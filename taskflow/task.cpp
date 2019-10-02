@@ -4,71 +4,61 @@ namespace nav{
 
 void Task::wait(int ms){
 	cout << _name << " loop..." << endl;
-	bool is_started = true;
-	{
-		unique_lock<mutex> lock(_mt);
-		if (_st == IDL)
-		{
-			_st = WTG;
-			is_started = false;
-		}
-		_cv.notify_one();
+
+	if (!_ready){
+		cout << _name << " ready" << endl;
+		_ready = true;
+		_cv.notify_all();
 	}
 
 	int loop_ms = (ms == FOREVER) ? _loop_ms:ms;
-	while (_st != FIN){
-		unique_lock<mutex> lock(_mt);
-		if (_st == FIN){
-			cout << _name << " already finished" << endl;
-			return;
-		}
 
-		cout << _name << " wait status to change..." << endl;
-		while (_st == WTG){
-			if (is_started)
-			{
-				if (_cb)
-					_cb->on_loop();
-				else 
-					on_loop();
-			}
+	unique_lock<mutex> lock(_mt);
+	if (_st == FIN){
+		cout << _name << " already finished" << endl;
+		return;
+	}
 
-			if (loop_ms == FOREVER)
-				_cv.wait(lock);
-			else{
-				_cv.wait_for(lock, milliseconds(loop_ms));
-				if (_st == WTG)
-				  return;
+	int st = _st;
+	while (_st == st){
+		cout << _name << " wait status to change for " << loop_ms << "ms" << endl;
+		if (loop_ms == FOREVER)
+			_cv.wait(lock);
+		else{
+			_cv.wait_for(lock, loop_ms*milliseconds(1));
+			if (_st == RNG){
+				_cb?_cb->on_loop():on_loop(); 
+				return;
 			}
 		}
-		cout << _name << " status changed" << endl;
-		//getchar();
-		switch(_st)
-		{
-		case RNG:
-			if (_cb)
-				_cb->on_running();
-			else
-				on_running();
-			break;
-		case PSD:
-			if (_cb)
-	    		_cb->on_paused();
-			else
-				on_paused();
-			break;
-		case FIN:
-			if (_cb)
-				_cb->on_finished();
-			else
-				on_finished();
-			return;
-		default:
-			cout << _name << " error invalid status" << endl;
-			assert(false);
-			break;
-		}
-		_st = WTG;
+	}
+
+	cout << _name << " status changed" << endl;
+	//getchar();
+	switch(_st)
+	{
+	case RNG:
+		if (_cb)
+			_cb->on_running();
+		else
+			on_running();
+		break;
+	case PSD:
+		if (_cb)
+			_cb->on_paused();
+		else
+			on_paused();
+		break;
+	case FIN:
+		if (_cb)
+			_cb->on_finished();
+		else
+			on_finished();
+		return;
+	default:
+		cout << _name << " error invalid status" << endl;
+		assert(false);
+		break;
 	}
 }
 

@@ -27,7 +27,6 @@ public:
 	enum STATE
 	{
 		IDL,
-		WTG,
 		RNG,
 		PSD,
 		FIN,
@@ -36,7 +35,6 @@ public:
 
 	enum OP
 	{
-		WAT,
 		STA,
 		STP,
 		PUS,
@@ -45,15 +43,15 @@ public:
 	};
 
 	STATE st_trans[ST_MAX][OP_MAX]{
-	   //WAT  STA  STP  PUS  RSM
-		{WTG, RNG, IDL, IDL, IDL},//IDL
-		{WTG, RNG, FIN, PSD, RNG},//WTG
-		{WTG, RNG, FIN, PSD, RNG},//RNG
-		{WTG, RNG, FIN, PSD, RNG},//PSD
-		{FIN, FIN, FIN, FIN, FIN},//FIN
+	   //STA  STP  PUS  RSM
+		{RNG, IDL, IDL, IDL},//IDL
+		{RNG, FIN, PSD, RNG},//RNG
+		{RNG, FIN, PSD, RNG},//PSD
+		{FIN, FIN, FIN, FIN},//FIN
 	};
 
-	Task(const string& name = ""):_cb(nullptr), _st(IDL), _name(name), _loop_ms(FOREVER){};
+	Task(const string& name = "")
+	:_ready(false), _cb(nullptr), _st(IDL), _name(name), _loop_ms(FOREVER){};
 
 	inline int status(){return _st;};
 	inline const string& name(){return _name;};	
@@ -61,10 +59,10 @@ public:
 	inline int  loop_ms(){return _loop_ms;};	
 	inline void loop_ms(int loop_ms){_loop_ms = loop_ms;};
 
-	inline virtual int start() {cout << _name << " start" << endl; return _next_state(STA);};
-	inline virtual int stop()  {cout << _name << " start" << endl; return _next_state(STP);};
-	inline virtual int pause() {cout << _name << " start" << endl; return _next_state(PUS);};
-	inline virtual int resume(){cout << _name << " start" << endl; return _next_state(RSM);};
+	inline virtual int start() {cout << _name << " start"  << endl; return _next_state(STA);};
+	inline virtual int stop()  {cout << _name << " stop"   << endl; return _next_state(STP);};
+	inline virtual int pause() {cout << _name << " pause"  << endl; return _next_state(PUS);};
+	inline virtual int resume(){cout << _name << " resume" << endl; return _next_state(RSM);};
 
 	inline virtual void on_loop()    {cout << _name << " on_loop" << endl;};
 	inline virtual void on_running() {cout << _name << " on_running" << endl;};
@@ -73,12 +71,22 @@ public:
 	inline void cb(TaskCB* cb){_cb = cb;};
 
 	inline virtual bool is_idle()    {unique_lock<mutex> lock(_mt);return _st == IDL;};
-	inline virtual bool is_ready()   {unique_lock<mutex> lock(_mt);return _st == WTG;};
+	inline virtual bool is_ready()   {unique_lock<mutex> lock(_mt);return _ready;    };
 	inline virtual bool is_paused()  {unique_lock<mutex> lock(_mt);return _st == PSD;};
 	inline virtual bool is_running() {unique_lock<mutex> lock(_mt);return _st == RNG;};
 	inline virtual bool is_finished(){unique_lock<mutex> lock(_mt);return _st == FIN;};
 
-	inline virtual bool wait_waiting (int ms = FOREVER){return wait(WTG, ms);};
+	inline virtual bool wait_ready   (int ms = FOREVER){
+		unique_lock<mutex> lock(_mt);
+		while(!_ready && _st != FIN){
+			if (ms == FOREVER)
+			  _cv.wait(lock);
+			else
+			  _cv.wait_for(lock, ms*milliseconds(1));
+		}
+
+		return _ready || _st == FIN;
+	};
 	inline virtual bool wait_running (int ms = FOREVER){return wait(RNG, ms);};
 	inline virtual bool wait_paused  (int ms = FOREVER){return wait(PSD, ms);};
 	inline virtual bool wait_finished(int ms = FOREVER){return wait(FIN, ms);};
@@ -91,6 +99,7 @@ private:
 	int _next_state(OP op);
 
 protected:	
+	bool               _ready;
 	int                _st;
 	int                _loop_ms;
 	string		       _name;

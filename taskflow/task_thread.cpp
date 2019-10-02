@@ -41,10 +41,16 @@ bool TaskThread::push(Task* t){
 	if (t == nullptr) return false;
 
 	unique_lock<mutex> lock(_mt);
+	if (_t && _t->is_finished()){
+		cout << "pre task still running" << endl;
+		return false;
+	}
+
 	_t = t;
 	_cv.notify_one();
 	lock.unlock();
-	_t->wait_waiting();
+
+	_t->Task::wait_ready();
 	cout << _name << " push " << t->name() << endl;
 	return true;
 }
@@ -59,7 +65,7 @@ void TaskThread::_thread_proc()
 		cout << _name << " wait..." << endl;
 		while (_running && (_t == nullptr || _t->is_finished())) _cv.wait(lock);
 	
-		cout << _name << " wait ok" << endl;
+		cout << _name << " wait:" << _t->name() << " st:" << _t->status() << endl;
 
 		if (!_running)
 		{
@@ -67,8 +73,7 @@ void TaskThread::_thread_proc()
 			break;
 		}
 
-		if (_t)
-		{
+		while (!_t->is_finished()){
 			_t->wait();
 		}
 	}

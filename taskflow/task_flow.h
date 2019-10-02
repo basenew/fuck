@@ -44,8 +44,8 @@ public:
 
 	inline size_t total_count(){return _tasks.size() + _actives.size();};
 	inline size_t running_count(){return _thds.size();};
-	inline void   push(TaskNode* t){_tasks.push_back(t);};
-	inline TaskNode*  push(const string& name, TaskCB* cb){
+	//inline void   push(TaskNode* t){_tasks.push_back(t);};
+	inline TaskNode*  push(const string& name, TaskCB* cb = nullptr){
 		TaskNode* t = new TaskNode(name);
 		_tasks.push_back(t);
 		t->cb(cb);

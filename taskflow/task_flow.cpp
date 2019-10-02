@@ -57,6 +57,7 @@ void TaskFlow::_wait(){
 			TaskNode* t = (TaskNode*)thd->task();
 			assert(t);
 			if (t->is_ready()){
+				cout << _name << " " << t->name() << " is ready" << endl;
 				finished = false;
 				t->start();
 				continue;
@@ -78,6 +79,10 @@ void TaskFlow::_wait(){
 				continue;
 			}
 
+			if (t->is_stop_flow()){
+				thd->stop();
+				continue;
+			}
 			bool only_one = true;
 			list<TaskNode*> behinds = t->behinds();	
 			for (auto bt:behinds){
@@ -86,11 +91,6 @@ void TaskFlow::_wait(){
 				cout << bt->name() << " state:" << bt->status() << endl;
 				if (bt->is_ready()){
 					cout << bt->name() << " is ready" << endl;
-					int ret = bt->start();
-					if (ret != ERR_OK){
-						cout << bt->name() << " start error:" << ret << endl;
-						continue;
-					}
 					if (only_one){
 						only_one = false;
 						thd->push(bt);
@@ -98,9 +98,15 @@ void TaskFlow::_wait(){
 					else{
 						TaskThread* thd = new TaskThread();
 						_thds.push_back(thd);
-						thd->push(bt);
 						thd->start();
+						thd->push(bt);
 					}
+					
+					int ret = bt->start();
+					if (ret != ERR_OK){
+						cout << bt->name() << " start error:" << ret << endl;
+					}
+
 					finished = false;
 				}
 				else

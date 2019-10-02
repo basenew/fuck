@@ -19,17 +19,11 @@ class TaskNode:public Task
 friend class TaskFlow;
 friend class TaskThread;
 public:
-	struct TaskNodeResult{
-		enum RESULT{
-			OK,
-			ERR,
-			IGR,
-		};
-
+	struct Result{
 		int ret;
 		int len;
 		void* param;
-		TaskNodeResult():ret(ERR), len(0), param(nullptr){};
+		Result():ret(ERR_OK), len(0), param(nullptr){};
 	};
 
 public:
@@ -86,7 +80,8 @@ public:
 
 	inline bool is_ready(){
 		unique_lock<mutex> lock(_mt);
-		return (_st == WTG || _st == IDL) && _fronts.empty();
+		//todo return _ready && _fronts.empty();
+		return _st == IDL && _fronts.empty();
 	};
 
 	inline bool is_last(){
@@ -97,6 +92,8 @@ public:
 	inline list<TaskNode*>& fronts() {return _fronts;};
 	inline list<TaskNode*>& behinds(){return _behinds;};
 
+	inline Result& result(){return _ret;};
+	inline bool is_stop_flow(){return _ret.ret > ERR_OK;};
 protected:
 	virtual void on_running()
 	{
@@ -105,12 +102,14 @@ protected:
 		//wait();
 		this_thread::sleep_for(seconds(2));
 		cout << _name << " on_running finished" << endl;
+		_st = FIN;
+		_ret.ret = ERR_FAIL;
 	};
 
 private:
 	list<TaskNode*> _fronts;
 	list<TaskNode*> _behinds;
-	TaskNodeResult  _task_result;
+	Result          _ret;
 };
 
 }
