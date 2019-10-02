@@ -2,25 +2,30 @@
 
 namespace nav{
 
-bool TaskFlow::start(function<void()> on_finish){
-	cout << _name << " start..." << endl;
-	if (StateMachine::start()){
-		for (Task* t:_tasks){
+bool TaskFlow::run(function<void()> on_finish){
+	cout << _name << " start" << endl;
+	if (ERR_OK == Task::start()){
+		int i = 0;
+		for (TaskNode* t:_tasks){
 			if (t->is_ready()){
-				t->start();
 				_actives.push_back(t);
 
-				TaskThread* thd = new TaskThread();
+				stringstream ss;
+				ss << i++;
+				TaskThread* thd = new TaskThread(ss.str());
 				_thds.push_back(thd);
-				thd->push(t);
 				thd->start();
+				thd->push(t);
+				//t->start();
 			}
 		}
 
 		if (on_finish){
 			_on_finish = on_finish;
-			if (_thd)
-			  delete _thd;
+			if (_thd){
+				delete _thd;
+				_thd = nullptr;
+			}
 
 			_thd = new thread(_thread_proc, this);
 			_thd->detach();
@@ -39,33 +44,53 @@ bool TaskFlow::start(function<void()> on_finish){
 
 void TaskFlow::_wait(){
 	bool finished = false;
-	while (!finished){
+	cout << _name << " wait..." << endl;
+	while (!is_finished() && !finished){
 		finished = true;
 		list<TaskThread*> thds = _thds;
 		for (TaskThread* thd:thds){
 			if (thd->is_exited()){
-				cout << "already stoped" << endl;
+				cout << _name << "already stoped" << endl;
 				continue;
 			}
 
-			Task* t = dynamic_cast<Task*>(thd->task());
+			TaskNode* t = (TaskNode*)thd->task();
 			assert(t);
-			t->wait();
-			if (t->is_last()){
-				cout << t->name() << " is last" << endl;
+			if (t->is_ready()){
+				cout << _name << " " << t->name() << " is ready" << endl;
+				finished = false;
+				t->start();
+				continue;
+			}
+			else if (!t->wait_finished(10)){
+				//cout << _name << " " << t->name() << " not finished" << endl;
+				finished = false;
+				continue;
+			}
+
+			if (is_finished()){
+				cout << _name << " stop by user" << endl;
+				thd->stop();
+				continue;
+			}
+			else if (t->is_finished() && t->is_last()){
+				cout << t->name() << " is finished and is last" << endl;
 				thd->stop();
 				continue;
 			}
 
+			if (t->is_stop_flow()){
+				thd->stop();
+				continue;
+			}
 			bool only_one = true;
-			list<Task*> behinds = t->behinds();	
+			list<TaskNode*> behinds = t->behinds();	
 			for (auto bt:behinds){
 				t->rm_behind(bt);
 				bt->rm_front(t);
-				cout << bt->name() << " state:" << bt->state() << endl;
+				cout << bt->name() << " state:" << bt->status() << endl;
 				if (bt->is_ready()){
 					cout << bt->name() << " is ready" << endl;
-					bt->start();
 					if (only_one){
 						only_one = false;
 						thd->push(bt);
@@ -73,9 +98,15 @@ void TaskFlow::_wait(){
 					else{
 						TaskThread* thd = new TaskThread();
 						_thds.push_back(thd);
-						thd->push(bt);
 						thd->start();
+						thd->push(bt);
 					}
+					
+					int ret = bt->start();
+					if (ret != ERR_OK){
+						cout << bt->name() << " start error:" << ret << endl;
+					}
+
 					finished = false;
 				}
 				else
