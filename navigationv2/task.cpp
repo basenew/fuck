@@ -25,7 +25,7 @@ void Task::wait(int ms){
 		if (loop_ms == FOREVER)
 			_cv.wait(lock);
 		else{
-			_cv.wait_for(lock, loop_ms*milliseconds(1));
+			_cv.wait_for(lock, milliseconds(loop_ms));
 			if (_st == RNG){
 				_cb?_cb->on_loop():on_loop(); 
 				return;
