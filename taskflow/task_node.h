@@ -81,6 +81,7 @@ public:
 	inline bool is_ready(){
 		unique_lock<mutex> lock(_mt);
 		//todo return _ready && _fronts.empty();
+		//cout << _name << " is ready:" << (_st == IDL && _fronts.empty()) << endl;
 		return _st == IDL && _fronts.empty();
 	};
 
@@ -93,7 +94,7 @@ public:
 	inline list<TaskNode*>& behinds(){return _behinds;};
 
 	inline Result& result(){return _ret;};
-	inline bool is_stop_flow(){return _ret.ret > ERR_OK;};
+	inline bool is_stop_flow(){return _st == FIN && _ret.ret > ERR_OK;};
 protected:
 	virtual void on_running()
 	{
@@ -102,8 +103,11 @@ protected:
 		//wait();
 		this_thread::sleep_for(seconds(2));
 		cout << _name << " on_running finished" << endl;
-		_st = FIN;
-		_ret.ret = ERR_FAIL;
+		//_st = FIN;
+		if (_name == "C"){
+			_st = FIN;
+			_ret.ret = ERR_FAIL;
+		}
 	};
 
 private:

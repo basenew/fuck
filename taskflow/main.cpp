@@ -60,7 +60,8 @@ void test_task_flow()
 	//tf.push(&tc);
 	//tf.push(&td);
 
-	tf.run(on_finish);
+	//tf.run(on_finish);
+	tf.run();
 	cout << "------------input any key to stop task flow-----------------------" << endl;
 	getchar();
 	cout << "test_task_flow finish" << endl;

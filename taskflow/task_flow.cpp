@@ -47,6 +47,7 @@ void TaskFlow::_wait(){
 	cout << _name << " wait..." << endl;
 	while (!is_finished() && !finished){
 		finished = true;
+		bool force_stop = false;
 		list<TaskThread*> thds = _thds;
 		for (TaskThread* thd:thds){
 			if (thd->is_exited()){
@@ -80,9 +81,12 @@ void TaskFlow::_wait(){
 			}
 
 			if (t->is_stop_flow()){
-				thd->stop();
-				continue;
+				cout << t->name() << " force stop xxxxxxxxxxxxxx" << endl;
+				force_stop = true;
+				//thd->stop();
+				break;
 			}
+
 			bool only_one = true;
 			list<TaskNode*> behinds = t->behinds();	
 			for (auto bt:behinds){
@@ -111,6 +115,16 @@ void TaskFlow::_wait(){
 				}
 				else
 					cout << bt->name() << " is not ready" << endl;
+			}
+		}
+
+		if (force_stop){
+			cout << _name << " force stop all threadxxxxxxxxx" << endl;
+			for (TaskThread* thd:thds){
+				if (!thd->is_exited()){
+					cout << _name << " force stop thread:"<< thd->name() << " xxxxxxxxx" << endl;
+					thd->stop();
+				}
 			}
 		}
 	}

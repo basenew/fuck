@@ -35,6 +35,8 @@ public:
 	TaskThread(const TaskThread&)=delete;
 	void operator=(const TaskThread&)=delete;
 
+	const string& name(){return _name;};
+	void name(const string& name){_name = name;};
 	bool start();
 
 	bool stop();

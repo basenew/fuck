@@ -21,13 +21,17 @@ bool TaskThread::start()
 }
 
 bool TaskThread::stop(){
-	cout << _name << " stop..." << endl;
+	cout << _name << " stop...xxxxxxxxxxxxxxx0" << endl;
 	unique_lock<mutex> lock(_mt);
 	if (_thd == nullptr || !_running) return true;
 
+	cout << _name << " stop... xxxxxxxxxxxxxxx1" << endl;
+	if (_t)_t->stop();
+	cout << _name << " stop... xxxxxxxxxxxxxxx2" << endl;
 	_running = false;	
 	_cv.notify_one();
 	lock.unlock();
+	cout << _name << " stop... xxxxxxxxxxxxxxx3" << endl;
 	
 	if (_thd->joinable())
 		_thd->join();
@@ -61,9 +65,12 @@ void TaskThread::_thread_proc()
 	
 	while (_running)
 	{
+		{
 		unique_lock<mutex> lock(_mt);
 		cout << _name << " wait..." << endl;
 		while (_running && (_t == nullptr || _t->is_finished())) _cv.wait(lock);
+		//while (_running && (_t == nullptr || _t->is_finished()))
+		//	_cv.wait_for(lock, milliseconds(10));
 	
 		cout << _name << " wait:" << _t->name() << " st:" << _t->status() << endl;
 
@@ -72,8 +79,10 @@ void TaskThread::_thread_proc()
 			cout << _name << " break..." << endl;
 			break;
 		}
+		}
 
-		while (!_t->is_finished()){
+		//while (!_t->is_finished()){
+		if (!_t->is_finished()){
 			_t->wait();
 		}
 	}

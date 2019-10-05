@@ -82,7 +82,7 @@ public:
 			if (ms == FOREVER)
 			  _cv.wait(lock);
 			else
-			  _cv.wait_for(lock, ms*milliseconds(1));
+			  _cv.wait_for(lock, milliseconds(ms));
 		}
 
 		return _ready || _st == FIN;
