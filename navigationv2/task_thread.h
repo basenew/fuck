@@ -61,11 +61,11 @@ private:
 	string  _name;
 	thread* _thd;
 
-	mutex   _mt;
 	Task*   _t;
 	Task*   _executed_t;
 
-	condition_variable _cv;
+	recursive_mutex    _mt;
+	condition_variable_any _cv;
 };
 
 }

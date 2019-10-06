@@ -79,14 +79,14 @@ public:
 	};
 
 	inline bool is_ready(){
-		unique_lock<mutex> lock(_mt);
+		unique_lock<recursive_mutex> lock(_mt);
 		//todo return _ready && _fronts.empty();
 		//cout << _name << " is ready:" << (_st == IDL && _fronts.empty()) << endl;
 		return _st == IDL && _fronts.empty();
 	};
 
 	inline bool is_last(){
-		unique_lock<mutex> lock(_mt);
+		unique_lock<recursive_mutex> lock(_mt);
 		return  _behinds.empty();
 	};
 

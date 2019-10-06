@@ -13,7 +13,7 @@ void Task::wait(int ms){
 
 	int loop_ms = (ms == FOREVER) ? _loop_ms:ms;
 
-	unique_lock<mutex> lock(_mt);
+	unique_lock<recursive_mutex> lock(_mt);
 	if (_st == FIN){
 		cout << _name << " already finished" << endl;
 		return;
@@ -64,7 +64,7 @@ void Task::wait(int ms){
 
 bool Task::wait(int st, int ms){
 	//cout << _name << " _st:" << _st << " wait st: " << st << " ms:" << ms << endl;
-	unique_lock<mutex> lock(_mt);
+	unique_lock<recursive_mutex> lock(_mt);
 	if (st == _st) return true;
 
 	if (ms == FOREVER){
@@ -79,7 +79,8 @@ bool Task::wait(int st, int ms){
 
 int Task::_next_state(OP op)
 {
-	unique_lock<mutex> lock(_mt);
+	cout << _name << " cur st:" << _st << " op:" << op<< endl;
+	unique_lock<recursive_mutex> lock(_mt);
 	int st = st_trans[_st][op];
 	cout << _name << " cur st:" << _st << " next st:" << st << " op:" << op<< endl;
 	if (st != _st)

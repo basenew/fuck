@@ -70,14 +70,14 @@ public:
 	inline virtual void on_finished(){cout << _name << " on_finished"  << endl;};
 	inline void cb(TaskCB* cb){_cb = cb;};
 
-	inline virtual bool is_idle()    {unique_lock<mutex> lock(_mt);return _st == IDL;};
-	inline virtual bool is_ready()   {unique_lock<mutex> lock(_mt);return _ready;    };
-	inline virtual bool is_paused()  {unique_lock<mutex> lock(_mt);return _st == PSD;};
-	inline virtual bool is_running() {unique_lock<mutex> lock(_mt);return _st == RNG;};
-	inline virtual bool is_finished(){unique_lock<mutex> lock(_mt);return _st == FIN;};
+	inline virtual bool is_idle()    {unique_lock<recursive_mutex> lock(_mt);return _st == IDL;};
+	inline virtual bool is_ready()   {unique_lock<recursive_mutex> lock(_mt);return _ready;    };
+	inline virtual bool is_paused()  {unique_lock<recursive_mutex> lock(_mt);return _st == PSD;};
+	inline virtual bool is_running() {unique_lock<recursive_mutex> lock(_mt);return _st == RNG;};
+	inline virtual bool is_finished(){unique_lock<recursive_mutex> lock(_mt);return _st == FIN;};
 
 	inline virtual bool wait_ready   (int ms = FOREVER){
-		unique_lock<mutex> lock(_mt);
+		unique_lock<recursive_mutex> lock(_mt);
 		while(!_ready && _st != FIN){
 			if (ms == FOREVER)
 			  _cv.wait(lock);
@@ -103,9 +103,9 @@ protected:
 	int                _st;
 	int                _loop_ms;
 	string		       _name;
-	mutex              _mt;
-	condition_variable _cv;
 	TaskCB*            _cb;
+	recursive_mutex    _mt;
+	condition_variable_any _cv;
 };
 
 }

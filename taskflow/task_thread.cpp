@@ -5,7 +5,7 @@ namespace nav{
 bool TaskThread::start()
 {
 	cout << _name << " start" << endl;
-	unique_lock<mutex> lock(_mt);
+	unique_lock<recursive_mutex> lock(_mt);
 	if (_running) return true;
 
 	_running = true;	
@@ -22,7 +22,7 @@ bool TaskThread::start()
 
 bool TaskThread::stop(){
 	cout << _name << " stop...xxxxxxxxxxxxxxx0" << endl;
-	unique_lock<mutex> lock(_mt);
+	unique_lock<recursive_mutex> lock(_mt);
 	if (_thd == nullptr || !_running) return true;
 
 	cout << _name << " stop... xxxxxxxxxxxxxxx1" << endl;
@@ -44,7 +44,7 @@ bool TaskThread::push(Task* t){
 	cout << _name << " push task" << endl;
 	if (t == nullptr) return false;
 
-	unique_lock<mutex> lock(_mt);
+	unique_lock<recursive_mutex> lock(_mt);
 	if (_t && _t->is_finished()){
 		cout << "pre task still running" << endl;
 		return false;
@@ -68,7 +68,7 @@ void TaskThread::_thread_proc()
 		//{
 		cout << _name << " lock..." << endl;
 		this_thread::sleep_for(milliseconds(10));
-		unique_lock<mutex> lock(_mt);
+		unique_lock<recursive_mutex> lock(_mt);
 		cout << _name << " locked to wait..." << endl;
 		//while (_running && (_t == nullptr || _t->is_finished())) _cv.wait(lock);
 		while (_running && (_t == nullptr || _t->is_finished()))

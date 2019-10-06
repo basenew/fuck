@@ -114,26 +114,11 @@ void Navigation::_handle_msg(const roslib_msgs::SignalMessage &msg){
         }
 		else if(msg.title == "request_locate"){
             PARSE_JSON(); 
-            int sw = req["content"]["switch"].asInt();
-            if(sw == 1){
-                ret = _locate(req, resp, result, msg);
-                if(ret != ERR_OK){
-                    break;
-                }
-                return;
-            }
-            else if(sw == 0){
-                ret = _locate_stop(req, resp, result, msg);
-                if(ret != ERR_OK)
-                    break;
-
-                resp["switch"] = Json::Value(0);
-                resp["state"] = Json::Value(0);
-            }
+			ret = _hdl_locate(req, resp, result, msg);
         }
 		else if(msg.title == "request_nav_to") {
             PARSE_JSON(); 
-			ret = _to_point(req, resp, result);
+			ret = _hdl_to_point(req, resp, result, msg);
         }
 		else if (msg.title == "request_nav_switch_with_shttpd") { 
             PARSE_JSON(); 
@@ -175,59 +160,109 @@ int Navigation::_get_position(Value &req, Value &resp, string& result){
 	return ret;
 }
 
-int Navigation::_to_point(Value &req, Value &resp, string& result){
-	int ret = is_located();
-	if (ret != ERR_OK){
+int Navigation::_hdl_to_point(Value &req, Value &resp, string& result, const SignalMessage &msg){
+	int ret = ERR_OK;
+
+	if (is_locating()){
+		ret = ERR_LOCATING;
 		return ret;
 	}
 
-    GsPos pos;
-    pos.angle = req["content"]["angle"].asFloat();
-    pos.x = req["content"]["x"].asInt();
-    pos.y = req["content"]["y"].asInt();
-
     int sw = req["content"]["switch"].asInt();
-    resp["switch"] = Json::Value(sw);
-
-	//todo not impl
 	switch(sw){
-	case 1:
-		break;
 	case 0:
+		if (is_navigating()){
+			ret = _cur_task->stop();	
+		}
+		else{
+			ret = ERR_NOT_RUNNING;
+		}
+		break;
+	case 1:
+		if (is_idle()){
+			GsNamePoint pt;
+    		pt.name = req["content"]["name"].asString();
+    		pt.pos.angle = req["content"]["angle"].asFloat();
+    		pt.pos.x = req["content"]["x"].asInt();
+    		pt.pos.y = req["content"]["y"].asInt();
+			ret = to_point(pt);
+		}
+		else {
+			ret = ERR_ALREADY_RUNNING;
+		}
 		break;
 	case 2:
+		if (is_navigating()){
+			ret = _cur_task->pause();	
+		}
+		else{
+			ret = ERR_NOT_RUNNING;
+		}
+		break;
+	default:
+		ret = ERR_INVALID_VALUE;
 		break;
 	}
 
 	return ret;
 }
 
+int Navigation::_hdl_locate(Value &req, Value &resp, string& result, const SignalMessage &msg){
+	int ret = ERR_OK;
+	if (is_navigating()){
+		ret = ERR_NAVIGATING;
+		return ret;
+	}
+
+    int sw = req["content"]["switch"].asInt();
+    if(sw == 1){
+		if (is_idle()){
+			string using_map = MapManager::get_instance().get_using_map();
+			if (using_map.empty()){
+				ret = ERR_MAP_NOT_USING;
+			}
+			else{
+				ret = _locate(req, resp, result, msg);
+			}
+		}
+		else{
+			ret = ERR_ALREADY_RUNNING;
+		}
+    }
+    else if(sw == 0){
+		if (is_running()){
+			ret = _cur_task->stop();
+		}
+		else{
+			ret = ERR_NOT_RUNNING;
+		}
+    }
+
+    resp["switch"] = Json::Value(sw);
+	return ret;
+}
+
 int Navigation::_locate(Value &req, Value &resp, string& result, const SignalMessage &msg){
 	//todo thread safe
-	string using_map = MapManager::get_instance().get_using_map();
-	if (using_map.empty())
-		return ERR_MAP_NOT_USING;
-
 	//todo judge nav not running
-	GsNamePoint pt;
-    _locator.point = req["content"]["name"].asString();
-    _locator.angle = req["content"]["angle"].asFloat();
-    _locator.x = req["content"]["x"].asInt();
-    _locator.y = req["content"]["y"].asInt();
+	if (_cur_task)delete _cur_task;
+	_cur_task = new Locator();
+
+	Locator& locator = *(Locator*)_cur_task;
+    locator.point = req["content"]["name"].asString();
+    locator.angle = req["content"]["angle"].asFloat();
+    locator.x = req["content"]["x"].asInt();
+    locator.y = req["content"]["y"].asInt();
 
 #ifdef _CHASSIS_MARSHELL_
     log_info("locate not turn around");
-	_locator.type = GS_LOCATE_DIRECT_CUSTMOIZED;
+	locator.type = GS_LOCATE_DIRECT_CUSTMOIZED;
 #else
     log_info("locate turn around");
-    _locator.type = GS_LOCATE_CUSTMOIZED;
+    locator.type = GS_LOCATE_CUSTMOIZED;
 #endif
-	_cur_task = &_locator;
-	return _locator.start();
-}
-
-int Navigation::_locate_stop(Value &req, Value &resp, string& result, const SignalMessage &msg){
-	return ERR_OK;
+	_thd.push(_cur_task);
+	return locator.start();
 }
 
 int Navigation::is_located(){
@@ -244,11 +279,7 @@ int Navigation::is_located(){
 	return ret;
 }
 
-int Navigation::to_point(const GsPos& pos){
-	return ERR_OK;
-}
-
-int Navigation::to_point_flow_path(const GsPos& pos, const GsPath& path){
+int Navigation::to_point(const GsNamePoint& pt){
     log_info("%s", __FUNCTION__);
     int ret = is_located();
 	if (ret != ERR_OK)
@@ -257,7 +288,7 @@ int Navigation::to_point_flow_path(const GsPos& pos, const GsPath& path){
 	//todo _add_monitor();
 	
     vector<Value> js_tasks;
-    Value task = GsApi::get_instance()->nav_new_nav_path_task(_map_name, _path, pos);
+    Value task = GsApi::get_instance()->nav_new_nav_path_task(_map_name, _path, pt.pos);
     js_tasks.push_back(task);
     ret = GsApi::get_instance()->nav_task_new(_task_name, _map_name, _map_id, js_tasks);
     if(ret != ERR_OK){
@@ -318,10 +349,10 @@ void Navigation::_status_cb(const string& data)
         if(code != 200 && code != 407 && (code < 800 || code > 900)){
             if(code == 306){
                 if(nav_type != NAV_PATROL || nav_type != NAV_PATROL_AUTO)
-                    report_pos_state(_code);
+                    publish_pos_status(_code);
             }
             else
-                report_pos_state(_code);
+                publish_pos_status(_code);
         }
 #endif
     }
@@ -536,6 +567,94 @@ void Navigation::_on_status(int code, const Value& json){
         default:
             break;
     }
+}
+
+int Navigation::publish_pos_status(int task_type, int status_code)
+{
+    log_info("report pos and status");
+    //report state and position
+	GsPos cur_pos;
+    int ret = GsApi::get_instance()->nav_get_pos(cur_pos);
+    if(ret != ERR_OK)
+        return ret;
+
+#if 0
+    int type = 0;
+    if(nav_type == NAV_PATROL)
+        type = 1;
+    else if(nav_type == NAV_NAV_TO)
+        type = 2;
+    else if(nav_type == NAV_RETURN)
+        type = 3;
+    else if(nav_type == NAV_LOW_BAT_RETURN)
+        type = 4;
+    else if(nav_type == NAV_PATROL_AUTO)
+        type = 5;
+    else if(nav_type == NAV_CHARGE)
+        type = 6;
+    else if(nav_type == NAV_LOCATE)
+        type = 7;
+#endif
+
+    Json::Value root;
+
+    root["title"] = "response_nav_state";
+    root["content"]["x"] = Json::Value(cur_pos.x);
+    root["content"]["y"] = Json::Value(cur_pos.y);
+    root["content"]["navtype"] = Json::Value(task_type);
+    root["content"]["angle"] = Json::Value((float)(cur_pos.angle));
+    root["content"]["state"] = Json::Value(status_code);
+
+    int64_t now = (int64_t)tinyros::Time::now().toMSec();
+
+    Json::FastWriter fw;
+    std::string js_data = fw.write(root);
+    roslib_msgs::SignalMessage resp;
+    resp.account = Robot::pc.c_str();
+    resp.msgID = std::to_string(now).c_str();
+    resp.msg = js_data.c_str();
+    rostopic::AgoraSendMessage_publish(resp);
+	return ERR_OK;
+}
+
+void Navigation::publish_status(int task_type, const std::string& reason, int status)
+{
+    log_info("report state");
+
+
+#if 0
+    int type = 0;
+    if(nav_type == NAV_PATROL)
+        type = 1;
+    else if(nav_type == NAV_RETURN)
+        type = 3;
+    else if(nav_type == NAV_NAV_TO)
+        type = 2;
+    else if(nav_type == NAV_LOW_BAT_RETURN)
+        type = 4;
+    else if(nav_type == NAV_PATROL_AUTO)
+        type = 5;
+    else if(nav_type == NAV_CHARGE)
+        type = 6;
+    else if(nav_type == NAV_LOCATE)
+        type = 7;
+#endif
+
+    Json::Value root;
+    root["title"] = "response_state";
+    root["content"]["navtype"] = Json::Value(task_type);
+    root["content"]["reason"] = Json::Value(reason);
+    root["content"]["state"] = Json::Value(status);
+
+    int64_t now = (int64_t)tinyros::Time::now().toMSec();
+
+    Json::FastWriter fw;
+    std::string js_data = fw.write(root);
+    roslib_msgs::SignalMessage resp;
+    resp.account = Robot::pc.c_str();
+    resp.msgID = std::to_string(now).c_str();
+    resp.msg = js_data.c_str();
+    rostopic::AgoraSendMessage_publish(resp);
 }
 
 }

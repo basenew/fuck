@@ -79,14 +79,14 @@ public:
 	};
 
 	inline bool is_ready(){
-		unique_lock<mutex> lock(_mt);
+		unique_lock<recursive_mutex> lock(_mt);
 		//todo return _ready && _fronts.empty();
 		//cout << _name << " is ready:" << (_st == IDL && _fronts.empty()) << endl;
 		return _st == IDL && _fronts.empty();
 	};
 
 	inline bool is_last(){
-		unique_lock<mutex> lock(_mt);
+		unique_lock<recursive_mutex> lock(_mt);
 		return  _behinds.empty();
 	};
 
@@ -96,6 +96,16 @@ public:
 	inline Result& result(){return _ret;};
 	inline bool is_stop_flow(){return _st == FIN && _ret.ret > ERR_OK;};
 protected:
+	virtual void on_loop(){
+		cout << _name << " on_loop" << endl;
+		this_thread::sleep_for(seconds(2));
+		cout << _name << " on_running finished" << endl;
+		//_st = FIN;
+		if (_name == "C"){
+			_st = FIN;
+			_ret.ret = ERR_FAIL;
+		}
+	};
 	virtual void on_running()
 	{
 		cout << _name << " on_running" << endl;
