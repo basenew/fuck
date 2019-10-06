@@ -96,6 +96,16 @@ public:
 	inline Result& result(){return _ret;};
 	inline bool is_stop_flow(){return _st == FIN && _ret.ret > ERR_OK;};
 protected:
+	virtual void on_loop(){
+		cout << _name << " on_loop" << endl;
+		this_thread::sleep_for(seconds(2));
+		cout << _name << " on_running finished" << endl;
+		//_st = FIN;
+		if (_name == "C"){
+			_st = FIN;
+			_ret.ret = ERR_FAIL;
+		}
+	};
 	virtual void on_running()
 	{
 		cout << _name << " on_running" << endl;

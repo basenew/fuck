@@ -79,6 +79,7 @@ bool Task::wait(int st, int ms){
 
 int Task::_next_state(OP op)
 {
+	cout << _name << " cur st:" << _st << " op:" << op<< endl;
 	unique_lock<mutex> lock(_mt);
 	int st = st_trans[_st][op];
 	cout << _name << " cur st:" << _st << " next st:" << st << " op:" << op<< endl;

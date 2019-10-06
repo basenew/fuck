@@ -65,12 +65,14 @@ void TaskThread::_thread_proc()
 	
 	while (_running)
 	{
-		{
+		//{
+		cout << _name << " lock..." << endl;
+		this_thread::sleep_for(milliseconds(10));
 		unique_lock<mutex> lock(_mt);
-		cout << _name << " wait..." << endl;
-		while (_running && (_t == nullptr || _t->is_finished())) _cv.wait(lock);
-		//while (_running && (_t == nullptr || _t->is_finished()))
-		//	_cv.wait_for(lock, milliseconds(10));
+		cout << _name << " locked to wait..." << endl;
+		//while (_running && (_t == nullptr || _t->is_finished())) _cv.wait(lock);
+		while (_running && (_t == nullptr || _t->is_finished()))
+			_cv.wait_for(lock, milliseconds(10));
 	
 		cout << _name << " wait:" << _t->name() << " st:" << _t->status() << endl;
 
@@ -79,11 +81,11 @@ void TaskThread::_thread_proc()
 			cout << _name << " break..." << endl;
 			break;
 		}
-		}
+		//}
 
 		//while (!_t->is_finished()){
 		if (!_t->is_finished()){
-			_t->wait();
+			_t->wait(10);
 		}
 	}
 	_exited = true;

@@ -123,6 +123,8 @@ void TaskFlow::_wait(){
 			for (TaskThread* thd:thds){
 				if (!thd->is_exited()){
 					cout << _name << " force stop thread:"<< thd->name() << " xxxxxxxxx" << endl;
+					//Task* t = thd->task();
+					//t->stop();
 					thd->stop();
 				}
 			}
