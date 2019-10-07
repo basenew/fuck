@@ -1,0 +1,12 @@
+#ifndef UBTTASKMGR_GLOBAL_H
+#define UBTTASKMGR_GLOBAL_H
+
+#include "ubtcore.h"
+
+#if defined(UBTTASKMGR_LIBRARY)
+#  define UBTTASKMGRSHARED_EXPORT DLL_EXPORT
+#else
+#  define UBTTASKMGRSHARED_EXPORT DLL_EXPORT
+#endif
+
+#endif // UBTTASKMGR_GLOBAL_H

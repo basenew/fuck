@@ -60,7 +60,7 @@ namespace comm
 				ev.data.ptr = h;
 				pev = &ev;
 			}
-			if (0 == epoll_ctl(_ep_fd, op, ev.data.fd, pev)) return 0;
+			return epoll_ctl(_ep_fd, op, ev.data.fd, pev);
 		}
 		
 		return -1;

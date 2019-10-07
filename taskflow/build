@@ -1,0 +1,2 @@
+#!/bin/bash
+g++ -std=c++11 -o test -pthread -g main.cpp task_thread.cpp task.cpp task_flow.cpp task_node.h

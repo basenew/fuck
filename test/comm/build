@@ -1,1 +1,0 @@
-g++ -o test test_msg_list.cpp -lcomm -L../../lib -std=c++11 -lpthread

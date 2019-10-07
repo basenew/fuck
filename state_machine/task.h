@@ -10,11 +10,11 @@ namespace state_machine
 
 	enum TSTATE
 	{
+		ST_INVALID,
 		ST_IDLE,
 		ST_WORKING,
 		ST_PAUSED,
 		ST_MAX,
-		ST_INVALID,
 	};
 	
 	enum TOP

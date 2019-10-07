@@ -1,0 +1,176 @@
+#include "ubtmusictask.h"
+
+UBTMusicTask::UBTMusicTask(IUBTTaskMsgNotifyer* notifyer)
+:UBTVSTask(MUSIC, STATE_MUSIC, 0, MODE_FG, notifyer)
+{
+
+}
+
+UBTMusicTask::~UBTMusicTask()
+{
+
+}
+
+
+int UBTMusicTask::operate(TaskAction action)
+{
+    return 0;
+}
+
+int UBTMusicTask::handle_msg(int msg, int ctx, zxLib::WPARAM wparam, zxLib::LPARAM lparam)
+{
+    return 0;
+}
+else if (message == UBTEVENT_DINGDANG_MSC_WINDOW_EVENT)
+{
+#ifdef ENABLE_DINGDANG_UI
+    int nDomain = wParam;
+    switch (nDomain)
+    {
+        case eUBTDingdangBotGlobalCtrl:
+        case eUBTDingdangBotMusic:
+        {
+            m_playMsg.strPlayContent = "未知";
+            m_playMsg.strPlayer = NULLSTR;
+            m_playMsg.strAlbumImage = NULLSTR;
+
+            MusicMsg* pMusicMsg = (MusicMsg*)lParam;
+            m_playMsg.nPlayType = eUBTDingdangBotMusic;
+            if (pMusicMsg)
+            {
+                m_playMsg.strPlayContent = pMusicMsg->strSong;
+                m_playMsg.strPlayer = pMusicMsg->strSinger;
+                if (m_playMsg.strPlayContent.empty())
+                {
+                    m_playMsg.strPlayContent = "未知";
+                }
+                // m_playMsg.playMode = pMusicMsg->playMode;
+                m_playMsg.mediaId = pMusicMsg->mediaId;
+                m_playMsg.imageUrl = pMusicMsg->image;
+                UBTUtil::print_msg("UBTStateMgr::handleMessage strAlbum = %s strSinger = %s strSong = %s mediaId = %s imageUrl = %s play mode =%d\n",
+                                   pMusicMsg->strAlbum.c_str(), pMusicMsg->strSinger.c_str(),
+                                   pMusicMsg->strSong.c_str(), m_playMsg.mediaId.c_str(),
+                                   m_playMsg.imageUrl.c_str(), m_playMsg.playMode);
+            }
+        }
+            break;
+
+        case eUBTDingdangBotFm:
+        {
+            m_playMsg.strPlayContent = "未知";
+            m_playMsg.strPlayer = NULLSTR;
+            m_playMsg.strAlbumImage = NULLSTR;
+
+            tagMusicMsg* pFmMsg = (tagMusicMsg*)lParam;
+            m_playMsg.nPlayType = eUBTDingdangBotFm;
+            if (pFmMsg)
+            {
+                m_playMsg.strPlayContent = pFmMsg->strSong;
+                m_playMsg.strPlayer =pFmMsg->strSinger;
+                if (m_playMsg.strPlayContent.empty())
+                {
+                    m_playMsg.strPlayContent = "未知";
+                }
+                UBTUtil::print_msg("UBTStateMgr::handleMessage strSAlbum = %s strSAnchor = %s strSShowName = %s playMode = %d\n",
+                                   pFmMsg->strAlbum.c_str(),
+                                   pFmMsg->strSinger.c_str(),
+                                   pFmMsg->strSong.c_str(),
+                                   pFmMsg->playMode);
+            }
+        }
+            break;
+        case eUBTDingdangBotJoke:
+        {
+            m_playMsg.strPlayContent = "笑话";
+            m_playMsg.strPlayer = NULLSTR;
+            m_playMsg.strAlbumImage = NULLSTR;
+            m_playMsg.nPlayType = eUBTDingdangBotJoke;
+            break;
+        }
+        case eUBTDingdangBotNews:
+        {
+            m_playMsg.strPlayContent = "新闻";
+            m_playMsg.strPlayer = NULLSTR;
+            m_playMsg.strAlbumImage = NULLSTR;
+            m_playMsg.nPlayType = eUBTDingdangBotNews;
+            break;
+        }
+        case eUBTDingdangBotPoem:
+        {
+            m_playMsg.strPlayContent = "诗歌";
+            m_playMsg.strPlayer = NULLSTR;
+            m_playMsg.strAlbumImage = NULLSTR;
+            m_playMsg.nPlayType = eUBTDingdangBotPoem;
+            break;
+        }
+        case eUBTDingdangBotRecipe:
+        {
+            m_playMsg.strPlayContent = "食谱";
+            m_playMsg.strPlayer = NULLSTR;
+            m_playMsg.strAlbumImage = NULLSTR;
+            m_playMsg.nPlayType = eUBTDingdangBotRecipe;
+            break;
+        }
+
+        default:
+        {
+            //其他默认是电台
+            m_playMsg.strPlayContent = "未知";
+            m_playMsg.strPlayer = NULLSTR;
+            m_playMsg.strAlbumImage = NULLSTR;
+            m_playMsg.nPlayType = eUBTDingdangBotFm;
+        }
+            break;
+    }
+
+    UBTUIProxy uiProxy(NULL);
+    if (m_playMsg.nPlayType == eUBTDingdangBotMusic)
+    {
+        uiProxy.showMusicPlayerWindow("", m_playMsg.strPlayContent, m_playMsg.strPlayer);
+
+        std::thread ([this]()
+        {
+            m_playMsg.strAlbumImage = downloadMusicImage();
+            ASSISTANT_CMD_PLAYBACK_STATUS_T playback;
+            UBTAudioProxy audioProxy(NULL);
+            audioProxy.operation_getPlayerState((LONG64)&playback);
+            //当没有等待音乐播放同时也没有音乐在播放，说明音乐播放失败了，不需要再show表情了
+            if (m_bWaitMusicPlay || playback.sUriStatus.eStatus != E_PLAYER_STATUS_STOP)
+            {
+                UBTUIProxy uiProxy(NULL);
+                uiProxy.showMusicPlayerWindow(m_playMsg.strAlbumImage, m_playMsg.strPlayContent, m_playMsg.strPlayer);
+            }
+        }).detach();
+    }
+    else
+    {
+        uiProxy.showRadioPlayerWindow(m_playMsg.nPlayType, m_playMsg.strPlayContent, m_playMsg.strPlayer);
+    }
+    //新增等待音乐的时候，属于忙碌状态
+
+    if (!m_bWaitMusicPlay)//如果没有等待音乐，则进入等待音乐播放的忙碌状态
+    {
+        if(UBTStateBase::m_nBusyCount <= 0)
+        {
+            handleTrigCondition(eUBTStateTrigCondStarPlay);
+        }
+        UBTUtil::print_msg("UBTStateBase::m_nBusyCount++ 222 :%d\n", UBTStateBase::m_nBusyCount);
+        UBTStateBase::m_nBusyCount++;
+        m_bWaitMusicPlay = true;
+
+        m_MusicTimeOut.start(std::chrono::milliseconds(20000), [this]()//20秒超时，不播放音乐的话，退出
+        {
+             if (m_bWaitMusicPlay)
+             {
+                 UBTUtil::print_msg("UBTStateBase::m_nBusyCount-- 111 :%d\n", UBTStateBase::m_nBusyCount);
+                 UBTStateBase::m_nBusyCount--;
+                 UBTUtil::print_msg("message m_nBusyCount m_MusicTimeOut  m_nBusyCount = %d\n", UBTStateBase::m_nBusyCount);
+                 m_bWaitMusicPlay = false;
+                 if(UBTStateBase::m_nBusyCount <= 0)
+                 {
+                     handleTrigCondition(eUBTStateTrigCondPlayEnd);
+                 }
+             }
+
+        });
+    }
