@@ -2,7 +2,8 @@
 #include <dlfcn.h>
 
 using namespace comm;
-typedef string (*test_dl)(const string& str);
+//typedef string (*test_dl)(const string& str);
+typedef void (*test_dl)();
 
 int main(int argc, char** argv)
 {
@@ -32,8 +33,9 @@ int main(int argc, char** argv)
 		else
 		{
 
-			string str = ((test_dl)func)("yangzou");
-			cout << "return:" << str << endl;
+			//string str = ((test_dl)func)("yangzou");
+			((test_dl)func)();
+			//cout << "return:" << str << endl;
 		}
 	}
 
